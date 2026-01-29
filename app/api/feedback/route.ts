@@ -48,13 +48,29 @@ export async function POST(req: Request) {
       );
     }
 
+    const evaluationUpdate: {
+      feedback_score: number;
+      feedback_at?: string;
+      is_good_example?: boolean;
+      is_bad_example?: boolean;
+    } = {
+      feedback_score: helpfulScore,
+      feedback_at: new Date().toISOString(),
+    };
+    if (helpfulScore >= 4) {
+      evaluationUpdate.is_good_example = true;
+    }
+    if (helpfulScore <= 2) {
+      evaluationUpdate.is_bad_example = true;
+    }
+
     const { error: updateError } = await supabase
       .from("evaluations")
-      .update({ feedback_score: helpfulScore })
+      .update(evaluationUpdate)
       .eq("id", evaluationId);
 
     if (updateError) {
-      console.error("evaluations feedback_score update error:", updateError);
+      console.error("evaluations update error:", updateError);
       // フィードバックは保存済みなので 200 のまま返す
     }
 

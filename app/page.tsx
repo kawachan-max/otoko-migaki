@@ -7,7 +7,6 @@ type Age = "18-22" | "23-29" | "30-39" | "40+";
 type Experience = "ほぼなし" | "少し" | "交際経験あり";
 type MeetMethod = "アプリ" | "紹介" | "職場学校" | "趣味" | "イベント";
 type Goal = "彼女が欲しい" | "デート経験増やしたい" | "結婚視野";
-type Problem = "見た目" | "会話" | "出会いの数" | "誘い方" | "自信";
 type TimeBudget = "〜1h" | "1-3h" | "3-7h" | "毎日少し";
 type Region = "都市部" | "地方";
 
@@ -18,7 +17,7 @@ type EvaluateRequest = {
     experience: Experience;
     meet_methods: MeetMethod[];
     goal: Goal;
-    problem: Problem;
+    problems: string[];
     time_budget: TimeBudget;
     region: Region;
   };
@@ -30,19 +29,33 @@ type EvaluateResponse = {
   persona_type: string;
   overall_score: number; // 1-5
   category_scores: {
-    looks: number;
-    opportunities: number;
+    appearance: number;
+    meetingActions: number;
     communication: number;
-    date_planning: number;
-    mindset: number;
+    datePower: number;
+    moteMindset: number;
     lifestyle: number;
   };
   coach_comment: [string, string, string];
   missions: [string, string, string];
   template: { title: string; content: string };
+  is_first_time?: boolean;
+  visit_count?: number;
+  growth_comment?: string | null;
+  changes_from_last?: { improved: string[]; needs_work: string[] } | null;
 };
 
 const meetMethodOptions: MeetMethod[] = ["アプリ", "紹介", "職場学校", "趣味", "イベント"];
+
+const problemOptions: string[] = [
+  "見た目の印象が良くない",
+  "会話が続かない・苦手",
+  "出会いの機会がない",
+  "デートに誘えない",
+  "自分に自信が持てない",
+  "生活リズムが乱れている",
+  "何から始めればいいか分からない",
+];
 
 function clampScore(n: number) {
   if (!Number.isFinite(n)) return 1;
@@ -86,14 +99,14 @@ function normalizeLines(input: string) {
 export default function Home() {
   const [anonymousUserId, setAnonymousUserId] = useState<string>("");
 
-  // form states
-  const [age, setAge] = useState<Age>("23-29");
-  const [experience, setExperience] = useState<Experience>("少し");
-  const [meetMethods, setMeetMethods] = useState<MeetMethod[]>(["アプリ"]);
-  const [goal, setGoal] = useState<Goal>("彼女が欲しい");
-  const [problem, setProblem] = useState<Problem>("会話");
-  const [timeBudget, setTimeBudget] = useState<TimeBudget>("1-3h");
-  const [region, setRegion] = useState<Region>("都市部");
+  // form states（初回は未選択。履歴があれば pre-fill で上書き）
+  const [age, setAge] = useState<Age | "">("");
+  const [experience, setExperience] = useState<Experience | "">("");
+  const [meetMethods, setMeetMethods] = useState<MeetMethod[]>([]);
+  const [goal, setGoal] = useState<Goal | "">("");
+  const [problems, setProblems] = useState<string[]>([]);
+  const [timeBudget, setTimeBudget] = useState<TimeBudget | "">("");
+  const [region, setRegion] = useState<Region | "">("");
 
   const [actionsText, setActionsText] = useState<string>("");
   const actions = useMemo(() => normalizeLines(actionsText), [actionsText]);
@@ -109,6 +122,10 @@ export default function Home() {
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [feedbackSending, setFeedbackSending] = useState(false);
 
+  const [formLoadedFromHistory, setFormLoadedFromHistory] = useState(false);
+  const [hasHistory, setHasHistory] = useState(false);
+  const [isFormExpanded, setIsFormExpanded] = useState(false);
+
   useEffect(() => {
     const key = "anonymous_user_id";
     const existing = window.localStorage.getItem(key);
@@ -120,6 +137,51 @@ export default function Home() {
     window.localStorage.setItem(key, id);
     setAnonymousUserId(id);
   }, []);
+
+  useEffect(() => {
+    if (!anonymousUserId || formLoadedFromHistory) return;
+    const params = new URLSearchParams({ anonymous_user_id: anonymousUserId });
+    fetch(`/api/user-history?${params}`)
+      .then((res) => res.json())
+      .then((data: { answers?: Record<string, unknown> }) => {
+        const a = data?.answers;
+        setHasHistory(typeof a === "object" && a !== null);
+        if (typeof a === "object" && a !== null) {
+          const ageVal = a.age;
+          if (typeof ageVal === "string" && ["18-22", "23-29", "30-39", "40+"].includes(ageVal)) {
+            setAge(ageVal as Age);
+          }
+          const expVal = a.experience;
+          if (typeof expVal === "string" && ["ほぼなし", "少し", "交際経験あり"].includes(expVal)) {
+            setExperience(expVal as Experience);
+          }
+          const goalVal = a.goal;
+          if (typeof goalVal === "string" && ["彼女が欲しい", "デート経験増やしたい", "結婚視野"].includes(goalVal)) {
+            setGoal(goalVal as Goal);
+          }
+          const timeVal = a.time_budget;
+          if (typeof timeVal === "string" && ["〜1h", "1-3h", "3-7h", "毎日少し"].includes(timeVal)) {
+            setTimeBudget(timeVal as TimeBudget);
+          }
+          const regionVal = a.region;
+          if (typeof regionVal === "string" && ["都市部", "地方"].includes(regionVal)) {
+            setRegion(regionVal as Region);
+          }
+          const meetVal = a.meet_methods;
+          if (Array.isArray(meetVal)) {
+            const arr = meetVal.filter((x): x is MeetMethod => typeof x === "string" && meetMethodOptions.includes(x as MeetMethod));
+            if (arr.length > 0) setMeetMethods(arr);
+          }
+          const problemsVal = a.problems;
+          if (Array.isArray(problemsVal)) {
+            const arr = problemsVal.filter((x) => typeof x === "string" && problemOptions.includes(x));
+            if (arr.length > 0) setProblems(arr);
+          }
+        }
+        setFormLoadedFromHistory(true);
+      })
+      .catch(() => setFormLoadedFromHistory(true));
+  }, [anonymousUserId, formLoadedFromHistory]);
 
   async function onSubmit() {
     setError(null);
@@ -133,12 +195,16 @@ export default function Home() {
       setError("初期化中です。数秒後にもう一度お試しください。");
       return;
     }
-    if (actions.length < 3 || actions.length > 10) {
-      setError("行動入力は3〜10個（改行区切り）でお願いします。");
+    if (actions.length < 1 || actions.length > 10) {
+      setError("1つ以上入力してね");
       return;
     }
     if (meetMethods.length === 0) {
       setError("出会い方を1つ以上選んでください。");
+      return;
+    }
+    if (!age || !experience || !goal || !timeBudget || !region) {
+      setError("年齢・恋愛経験・目的・使える時間・地域を選択してください。");
       return;
     }
 
@@ -151,7 +217,7 @@ export default function Home() {
           experience,
           meet_methods: meetMethods,
           goal,
-          problem,
+          problems,
           time_budget: timeBudget,
           region,
         },
@@ -229,22 +295,42 @@ export default function Home() {
     <div className="min-h-screen bg-white">
       <div className="mx-auto w-full max-w-2xl px-4 py-10">
         <header className="space-y-2">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">男磨き判定</h1>
-          <p className="text-sm text-slate-600">匿名・無料｜努力の方向を5段階でやさしく判定</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+            「何をすればいいか分からない」を解決
+          </h1>
+          <p className="text-base text-slate-700 sm:text-lg">
+            AIが男磨きコーチとなって、彼女づくり・婚活・恋愛をサポート
+          </p>
+          <p className="text-xs text-slate-500 sm:text-sm">
+            匿名・無料・1分で診断 ｜ 続けるほど成長が見える
+          </p>
         </header>
 
         <div className="mt-8 space-y-6">
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-base font-semibold text-slate-900">診断フォーム（7問）</h2>
+          {(hasHistory && isFormExpanded) || !hasHistory ? (
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-base font-semibold text-slate-900">診断フォーム（7問）</h2>
+                {hasHistory && (
+                  <button
+                    type="button"
+                    onClick={() => setIsFormExpanded(false)}
+                    className="shrink-0 text-sm font-medium text-slate-500 hover:text-slate-700 hover:underline"
+                  >
+                    条件を閉じる ▲
+                  </button>
+                )}
+              </div>
 
             <div className="mt-4 grid grid-cols-1 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">1. 年齢</label>
                 <select
                   value={age}
-                  onChange={(e) => setAge(e.target.value as Age)}
+                  onChange={(e) => setAge(e.target.value as Age | "")}
                   className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 >
+                  <option value="">選択してください</option>
                   <option value="18-22">18-22</option>
                   <option value="23-29">23-29</option>
                   <option value="30-39">30-39</option>
@@ -256,9 +342,10 @@ export default function Home() {
                 <label className="text-sm font-medium text-slate-700">2. 恋愛経験</label>
                 <select
                   value={experience}
-                  onChange={(e) => setExperience(e.target.value as Experience)}
+                  onChange={(e) => setExperience(e.target.value as Experience | "")}
                   className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 >
+                  <option value="">選択してください</option>
                   <option value="ほぼなし">ほぼなし</option>
                   <option value="少し">少し</option>
                   <option value="交際経験あり">交際経験あり</option>
@@ -303,9 +390,10 @@ export default function Home() {
                 <label className="text-sm font-medium text-slate-700">4. 目的</label>
                 <select
                   value={goal}
-                  onChange={(e) => setGoal(e.target.value as Goal)}
+                  onChange={(e) => setGoal(e.target.value as Goal | "")}
                   className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 >
+                  <option value="">選択してください</option>
                   <option value="彼女が欲しい">彼女が欲しい</option>
                   <option value="デート経験増やしたい">デート経験増やしたい</option>
                   <option value="結婚視野">結婚視野</option>
@@ -313,27 +401,46 @@ export default function Home() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">5. 困りごと</label>
-                <select
-                  value={problem}
-                  onChange={(e) => setProblem(e.target.value as Problem)}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                >
-                  <option value="見た目">見た目</option>
-                  <option value="会話">会話</option>
-                  <option value="出会いの数">出会いの数</option>
-                  <option value="誘い方">誘い方</option>
-                  <option value="自信">自信</option>
-                </select>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-slate-700">5. 困りごと（複数選択可）</label>
+                  <span className="text-xs text-slate-500">{problems.length}件選択</span>
+                </div>
+                <div className="grid grid-cols-1 gap-2">
+                  {problemOptions.map((p) => {
+                    const checked = problems.includes(p);
+                    return (
+                      <label
+                        key={p}
+                        className={[
+                          "flex items-center gap-2 rounded-xl border px-3 py-3 text-sm",
+                          checked ? "border-blue-200 bg-blue-50" : "border-slate-200 bg-white",
+                        ].join(" ")}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => {
+                            setProblems((prev) =>
+                              e.target.checked ? [...prev, p] : prev.filter((x) => x !== p)
+                            );
+                          }}
+                          className="h-4 w-4 accent-blue-500"
+                        />
+                        <span className="text-slate-800">{p}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">6. 使える時間</label>
                 <select
                   value={timeBudget}
-                  onChange={(e) => setTimeBudget(e.target.value as TimeBudget)}
+                  onChange={(e) => setTimeBudget(e.target.value as TimeBudget | "")}
                   className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 >
+                  <option value="">選択してください</option>
                   <option value="〜1h">〜1h</option>
                   <option value="1-3h">1-3h</option>
                   <option value="3-7h">3-7h</option>
@@ -345,28 +452,31 @@ export default function Home() {
                 <label className="text-sm font-medium text-slate-700">7. 地域</label>
                 <select
                   value={region}
-                  onChange={(e) => setRegion(e.target.value as Region)}
+                  onChange={(e) => setRegion(e.target.value as Region | "")}
                   className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 >
+                  <option value="">選択してください</option>
                   <option value="都市部">都市部</option>
                   <option value="地方">地方</option>
                 </select>
               </div>
             </div>
           </section>
+          ) : null}
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-base font-semibold text-slate-900">行動入力</h2>
-            <p className="mt-1 text-sm text-slate-600">今やっていることを3〜10個書いてね（改行区切り）</p>
+            <h2 className="text-base font-semibold text-slate-900">今日やったこと</h2>
+            <p className="mt-1 text-sm text-slate-600">今日やったことを書いてね！（改行で複数入力できるよ）</p>
             <textarea
               value={actionsText}
               onChange={(e) => setActionsText(e.target.value)}
-              placeholder={`例:\n週2回ジム\n美容室は月1\n写真を撮り直した\nアプリは毎日10分\n会話ネタをメモ`}
+              placeholder={"例：マッチングアプリでメッセージを送った\n　　職場の人に話しかけた\n　　筋トレをした"}
               rows={7}
               className="mt-3 w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm leading-6 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
+            <p className="mt-2 text-xs text-slate-500">具体的に書くほど、的確なアドバイスができるよ！</p>
             <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
-              <span>入力数: {actions.length} / 10</span>
+              <span>入力数: {actions.length}個</span>
               <span className="tabular-nums">匿名ID: {anonymousUserId ? anonymousUserId.slice(0, 8) : "..."}</span>
             </div>
 
@@ -379,15 +489,25 @@ export default function Home() {
             <button
               type="button"
               onClick={onSubmit}
-              disabled={isLoading}
+              disabled={isLoading || actions.length < 1}
               className={[
                 "mt-4 w-full rounded-2xl bg-blue-500 px-4 py-4 text-base font-semibold text-white shadow-sm transition",
                 "hover:bg-blue-600 active:bg-blue-700",
                 "disabled:cursor-not-allowed disabled:opacity-60",
               ].join(" ")}
             >
-              {isLoading ? "判定中..." : "判定する"}
+              {isLoading ? "診断中..." : "診断する"}
             </button>
+
+            {hasHistory && !isFormExpanded && (
+              <button
+                type="button"
+                onClick={() => setIsFormExpanded(true)}
+                className="mt-3 w-full text-center text-xs text-slate-500 hover:text-slate-700 hover:underline sm:text-sm"
+              >
+                条件を変更する ▼
+              </button>
+            )}
           </section>
 
           {result && (
@@ -395,6 +515,9 @@ export default function Home() {
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1">
                   <h2 className="text-base font-semibold text-slate-900">結果</h2>
+                  {(result.visit_count ?? 0) >= 2 && (
+                    <p className="text-sm font-medium text-blue-600">{result.visit_count}回目の判定です！</p>
+                  )}
                   <p className="text-sm text-slate-600">ペルソナタイプ: <span className="font-medium text-slate-900">{result.persona_type}</span></p>
                 </div>
                 <div className="text-right">
@@ -405,13 +528,44 @@ export default function Home() {
                 </div>
               </div>
 
+              {result.growth_comment && (
+                <div className="mt-5 rounded-2xl border border-green-200 bg-green-50 p-4">
+                  <div className="text-sm font-semibold text-green-900">前回からの成長</div>
+                  <p className="mt-2 text-sm text-green-800">{result.growth_comment}</p>
+                  {result.changes_from_last && (result.changes_from_last.improved.length > 0 || result.changes_from_last.needs_work.length > 0) && (
+                    <div className="mt-3 space-y-2">
+                      {result.changes_from_last.improved.length > 0 && (
+                        <div>
+                          <span className="text-xs font-medium text-green-700">改善した点</span>
+                          <ul className="mt-1 list-disc pl-5 text-sm text-green-800">
+                            {result.changes_from_last.improved.map((s, i) => (
+                              <li key={i}>{s}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {result.changes_from_last.needs_work.length > 0 && (
+                        <div>
+                          <span className="text-xs font-medium text-blue-700">まだ課題の点</span>
+                          <ul className="mt-1 list-disc pl-5 text-sm text-blue-800">
+                            {result.changes_from_last.needs_work.map((s, i) => (
+                              <li key={i}>{s}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="mt-5 grid grid-cols-1 gap-3">
-                <AxisBar label="見た目" score={result.category_scores.looks} />
-                <AxisBar label="出会い" score={result.category_scores.opportunities} />
-                <AxisBar label="会話" score={result.category_scores.communication} />
-                <AxisBar label="デート" score={result.category_scores.date_planning} />
-                <AxisBar label="マインド" score={result.category_scores.mindset} />
-                <AxisBar label="生活" score={result.category_scores.lifestyle} />
+                <AxisBar label="外見磨き（服装・髪型・清潔感）" score={result.category_scores.appearance} />
+                <AxisBar label="出会い行動（機会を増やす努力）" score={result.category_scores.meetingActions} />
+                <AxisBar label="コミュ力（話す・聞く・質問する）" score={result.category_scores.communication} />
+                <AxisBar label="デート力（誘う・計画・実行）" score={result.category_scores.datePower} />
+                <AxisBar label="モテマインド（自信・前向きさ）" score={result.category_scores.moteMindset} />
+                <AxisBar label="生活習慣（睡眠・食事・趣味）" score={result.category_scores.lifestyle} />
               </div>
 
               <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
