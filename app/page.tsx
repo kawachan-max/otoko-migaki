@@ -362,7 +362,7 @@ export default function Home() {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-slate-700">3. 出会い方（複数選択）</label>
+                  <label className="text-sm font-medium text-slate-700">3. 出会い方（複数選択可）</label>
                   <span className="text-xs text-slate-500">{meetMethods.length}件選択</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
