@@ -29,7 +29,12 @@ export async function POST(req: Request) {
     const mismatchAreas = Array.isArray(body.mismatch_areas)
       ? body.mismatch_areas.filter((x) => typeof x === "string")
       : [];
-    const comment = typeof body.comment === "string" ? body.comment.trim() : null;
+    const COMMENT_MAX_LENGTH = 200;
+    let comment: string | null = typeof body.comment === "string" ? body.comment.trim() : null;
+    if (comment !== null && comment.length === 0) comment = null;
+    if (comment !== null && comment.length > COMMENT_MAX_LENGTH) {
+      comment = comment.slice(0, COMMENT_MAX_LENGTH);
+    }
 
     const supabase = createServerClient();
 
@@ -57,7 +62,7 @@ export async function POST(req: Request) {
       feedback_score: helpfulScore,
       feedback_at: new Date().toISOString(),
     };
-    if (helpfulScore >= 4) {
+    if (helpfulScore >= 4 && comment !== null && comment.length > 0) {
       evaluationUpdate.is_good_example = true;
     }
     if (helpfulScore <= 2) {

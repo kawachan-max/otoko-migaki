@@ -118,9 +118,11 @@ export default function Home() {
   // result UI states
   const [missionDone, setMissionDone] = useState<[boolean, boolean, boolean]>([false, false, false]);
   const [feedback, setFeedback] = useState<number>(0);
+  const [feedbackComment, setFeedbackComment] = useState<string>("");
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [feedbackSending, setFeedbackSending] = useState(false);
+  const FEEDBACK_COMMENT_MAX = 200;
 
   const [formLoadedFromHistory, setFormLoadedFromHistory] = useState(false);
   const [hasHistory, setHasHistory] = useState(false);
@@ -188,6 +190,7 @@ export default function Home() {
     setResult(null);
     setCopyState("idle");
     setFeedback(0);
+    setFeedbackComment("");
     setFeedbackSent(false);
     setMissionDone([false, false, false]);
 
@@ -247,12 +250,16 @@ export default function Home() {
     }
   }
 
-  async function submitFeedback(score: number) {
-    if (!result?.evaluation_id) return;
-    setFeedback(score);
-    if (feedbackSent) return;
+  async function submitFeedback() {
+    if (!result?.evaluation_id || feedbackSent) return;
+    const score = feedback;
+    if (score < 1 || score > 5) return;
     setFeedbackSending(true);
     try {
+      const commentToSend =
+        typeof feedbackComment === "string" && feedbackComment.trim().length > 0
+          ? feedbackComment.trim().slice(0, FEEDBACK_COMMENT_MAX)
+          : undefined;
       const res = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -260,7 +267,7 @@ export default function Home() {
           evaluation_id: result.evaluation_id,
           helpful_score: score,
           mismatch_areas: [],
-          comment: undefined,
+          comment: commentToSend,
         }),
       });
       const data: unknown = await res.json().catch(() => null);
@@ -272,6 +279,7 @@ export default function Home() {
         throw new Error(msg);
       }
       setFeedbackSent(true);
+      setFeedbackComment("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "送信に失敗しました。");
     } finally {
@@ -620,15 +628,16 @@ export default function Home() {
               </div>
 
               <div className="mt-6 border-t border-slate-100 pt-5">
-                <div className="text-sm font-semibold text-slate-900">フィードバック</div>
-                <p className="mt-1 text-sm text-slate-600">この判定、役に立った？</p>
+                <h3 className="text-sm font-semibold text-slate-900">フィードバック</h3>
+                <p className="mt-1 text-sm text-slate-600">あなたの声で、次のアドバイスがもっと的確に！</p>
+                <p className="mt-2 text-sm font-medium text-slate-700">この診断、役に立った？</p>
                 <div className="mt-2 flex gap-2">
                   {[1, 2, 3, 4, 5].map((n) => (
                     <button
                       key={n}
                       type="button"
-                      onClick={() => submitFeedback(n)}
-                      disabled={feedbackSending}
+                      onClick={() => setFeedback(n)}
+                      disabled={feedbackSending || feedbackSent}
                       className={[
                         "h-10 w-10 rounded-xl border text-lg transition",
                         feedback >= n ? "border-blue-200 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-400",
@@ -640,14 +649,39 @@ export default function Home() {
                     </button>
                   ))}
                 </div>
-                {feedback > 0 && !feedbackSent && feedbackSending && (
-                  <p className="mt-2 text-xs text-slate-500">送信中...</p>
+                <div className="mt-4 space-y-1">
+                  <label className="text-sm text-slate-700">
+                    💬 一言で、あなた専用のコーチに育つ＆同じ悩みの仲間も救えます（任意）
+                  </label>
+                  <textarea
+                    value={feedbackComment}
+                    onChange={(e) => setFeedbackComment(e.target.value.slice(0, FEEDBACK_COMMENT_MAX))}
+                    placeholder="例：デートの誘い方をもっと詳しく教えてほしい"
+                    rows={3}
+                    disabled={feedbackSending || feedbackSent}
+                    className="mt-1 w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm leading-6 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:opacity-60"
+                  />
+                  <p className="text-right text-xs text-slate-500">
+                    {feedbackComment.length}/{FEEDBACK_COMMENT_MAX}文字
+                  </p>
+                </div>
+                {!feedbackSent && (
+                  <button
+                    type="button"
+                    onClick={submitFeedback}
+                    disabled={feedbackSending || feedback < 1}
+                    className={[
+                      "mt-4 w-full rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 transition",
+                      "hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60",
+                    ].join(" ")}
+                  >
+                    {feedbackSending ? "送信中..." : "送信する"}
+                  </button>
                 )}
                 {feedbackSent && (
-                  <p className="mt-2 text-sm font-medium text-blue-600">フィードバックありがとう！</p>
-                )}
-                {feedback > 0 && !feedbackSent && !feedbackSending && (
-                  <p className="mt-2 text-xs text-slate-500">評価: {feedback}/5（星を押すと送信されます）</p>
+                  <p className="mt-4 text-sm font-medium text-blue-600">
+                    ありがとう！あなたと仲間のために、次から反映されるよ！
+                  </p>
                 )}
               </div>
             </section>
