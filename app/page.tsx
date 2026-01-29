@@ -103,23 +103,23 @@ const CATEGORY_DISPLAY: { key: keyof EvaluateResponse["category_scores"]; label:
 type HistoryItem = { attempt: number; score: number; date: string };
 
 function WeeklyReportLineChart({ history }: { history: HistoryItem[] }) {
-  const data = history.map((h) => ({ ...h, label: `第${h.attempt}回` }));
+  if (!history.length) return null;
+  const data = history.map((h) => ({ ...h, xLabel: `${h.attempt}` }));
   return (
     <div className="rounded-xl bg-white p-4">
       <div className="text-center text-xs font-medium text-slate-600">スコアの推移（100点満点）</div>
-      <div className="mt-2 h-[200px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="mt-2 h-[200px] min-h-[200px] w-full">
+        <ResponsiveContainer width="100%" height={200}>
           <LineChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#64748b" }} />
+            <XAxis dataKey="xLabel" tick={{ fontSize: 10, fill: "#64748b" }} />
             <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "#64748b" }} width={28} />
             <Tooltip
               contentStyle={{ backgroundColor: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px" }}
               formatter={(value: number) => [`${value}点`, "スコア"]}
-              labelFormatter={(
-                _label: string,
-                payload: { payload?: { date?: string; attempt?: number } }[]
-              ) => (payload[0]?.payload?.date ? `${payload[0].payload.date} (第${payload[0].payload.attempt}回)` : "")}
+              labelFormatter={(_: string, payload: { payload?: HistoryItem }[]) =>
+                payload[0]?.payload ? `${payload[0].payload.date}（第${payload[0].payload.attempt}回）` : ""
+              }
             />
             <Line
               type="monotone"

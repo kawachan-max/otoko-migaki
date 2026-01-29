@@ -32,6 +32,37 @@ export async function GET(req: Request) {
 
     const supabase = createServerClient();
 
+    // 診断履歴（evaluations テーブル）を取得（古い順）。X軸=診断回数、Y軸=スコア(0-100)
+    const { data: historyData, error: historyError } = await supabase
+      .from("evaluations")
+      .select("result, created_at")
+      .eq("anonymous_user_id", anonymousUserId.trim())
+      .order("created_at", { ascending: true });
+
+    const history: HistoryItem[] = [];
+    if (!historyError && Array.isArray(historyData)) {
+      historyData.forEach((row, index) => {
+        if (typeof row === "object" && row !== null && "result" in row) {
+          const result = (row as { result?: unknown; created_at?: string }).result;
+          const created_at = (row as { result?: unknown; created_at?: string }).created_at;
+          if (typeof result === "object" && result !== null && "overall_score" in result) {
+            const score = (result as { overall_score?: unknown }).overall_score;
+            if (typeof score === "number" && Number.isFinite(score) && score >= 0 && score <= 100) {
+              const dateStr =
+                typeof created_at === "string" && created_at
+                  ? new Date(created_at).toISOString().slice(0, 10)
+                  : new Date().toISOString().slice(0, 10);
+              history.push({
+                attempt: index + 1,
+                score: Math.round(score),
+                date: dateStr,
+              });
+            }
+          }
+        }
+      });
+    }
+
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
     const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
