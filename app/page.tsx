@@ -128,6 +128,14 @@ export default function Home() {
   const [hasHistory, setHasHistory] = useState(false);
   const [isFormExpanded, setIsFormExpanded] = useState(false);
 
+  // 週次レポート
+  const [weeklyReport, setWeeklyReport] = useState<{
+    thisWeek: { count: number; averageScore: number };
+    lastWeek: { count: number; averageScore: number };
+    scoreDiff: number;
+  } | null>(null);
+  const [weeklyReportLoading, setWeeklyReportLoading] = useState(false);
+
   useEffect(() => {
     const key = "anonymous_user_id";
     const existing = window.localStorage.getItem(key);
@@ -243,6 +251,29 @@ export default function Home() {
       }
 
       setResult(data as EvaluateResponse);
+
+      // 週次レポートを取得
+      if (anonymousUserId) {
+        setWeeklyReportLoading(true);
+        try {
+          const params = new URLSearchParams({ anonymous_user_id: anonymousUserId });
+          const reportRes = await fetch(`/api/weekly-report?${params}`);
+          if (reportRes.ok) {
+            const reportData = (await reportRes.json()) as {
+              thisWeek: { count: number; averageScore: number };
+              lastWeek: { count: number; averageScore: number };
+              scoreDiff: number;
+            };
+            if (reportData.thisWeek.count > 0) {
+              setWeeklyReport(reportData);
+            }
+          }
+        } catch (e) {
+          console.error("[page] Weekly report fetch error:", e);
+        } finally {
+          setWeeklyReportLoading(false);
+        }
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "不明なエラーが発生しました。");
     } finally {
@@ -626,6 +657,51 @@ export default function Home() {
                   {result.template.content}
                 </pre>
               </div>
+
+              {(weeklyReportLoading || (weeklyReport && weeklyReport.thisWeek.count > 0)) && (
+                <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+                  <h3 className="text-center text-sm font-semibold text-slate-900">週次レポート</h3>
+                  {weeklyReportLoading ? (
+                    <div className="mt-4 text-center text-sm text-slate-600">集計中...</div>
+                  ) : weeklyReport && weeklyReport.thisWeek.count > 0 ? (
+                    <>
+                      <div className="mt-4 grid grid-cols-2 gap-4">
+                        <div className="rounded-xl bg-white p-4 text-center">
+                          <div className="text-xs text-slate-600">今週の診断回数</div>
+                          <div className="mt-2 text-2xl font-bold text-slate-900">{weeklyReport.thisWeek.count}回</div>
+                        </div>
+                        <div className="rounded-xl bg-white p-4 text-center">
+                          <div className="text-xs text-slate-600">今週の平均スコア</div>
+                          <div className="mt-2 text-2xl font-bold text-blue-600">{weeklyReport.thisWeek.averageScore}点</div>
+                        </div>
+                      </div>
+                      {weeklyReport.lastWeek.count > 0 && (
+                        <div className="mt-4 flex items-center justify-between rounded-xl bg-white px-4 py-3 text-center">
+                          <span className="text-xs text-slate-600">先週との比較</span>
+                          <span
+                            className={`text-sm font-semibold ${
+                              weeklyReport.scoreDiff > 0
+                                ? "text-green-600"
+                                : weeklyReport.scoreDiff < 0
+                                  ? "text-red-600"
+                                  : "text-slate-600"
+                            }`}
+                          >
+                            {weeklyReport.scoreDiff > 0 ? "+" : ""}
+                            {weeklyReport.scoreDiff}点
+                            {weeklyReport.scoreDiff > 0 ? " ↑" : weeklyReport.scoreDiff < 0 ? " ↓" : ""}
+                          </span>
+                        </div>
+                      )}
+                      {weeklyReport.lastWeek.count === 0 && (
+                        <div className="mt-4 rounded-xl bg-white px-4 py-3 text-center text-xs text-slate-600">
+                          先週のデータはありません
+                        </div>
+                      )}
+                    </>
+                  ) : null}
+                </div>
+              )}
 
               <div className="mt-6 border-t border-slate-100 pt-5">
                 <h3 className="text-sm font-semibold text-slate-900">フィードバック</h3>
