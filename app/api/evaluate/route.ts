@@ -118,7 +118,7 @@ function normalizeResponse(
   const res: EvaluateResponse = {
     evaluation_id: "",
     persona_type: getString(root.persona_type) ?? "改善スタート型",
-    overall_score: Math.min(100, Math.max(0, sum)),
+    overall_score: clampOverallScore(sum),
     category_scores: categoryScores,
     coach_comment: [
       getString(coach[0]) ?? "今の努力を言語化できている時点で、もう前に進めています。",
