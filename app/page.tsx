@@ -488,13 +488,13 @@ export default function Home() {
       <div className="mx-auto w-full max-w-2xl px-4 py-10">
         <header className="space-y-2">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            「何をすればいいか分からない」を解決
+            男磨きAI
           </h1>
           <p className="text-base text-slate-700 sm:text-lg">
-            AIが男磨きコーチとなって、彼女づくり・婚活・恋愛をサポート
+            恋愛経験ゼロから彼女ゲットまで応援！AIが一緒に成長する恋のコーチ
           </p>
           <p className="text-xs text-slate-500 sm:text-sm">
-            匿名・無料・1分で診断 ｜ 続けるほど成長が見える
+            匿名・無料・1分で診断 & 続けるほど成長が見えます
           </p>
         </header>
 
