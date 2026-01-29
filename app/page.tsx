@@ -239,7 +239,6 @@ export default function Home() {
   const [result, setResult] = useState<EvaluateResponse | null>(null);
 
   // result UI states
-  const [challengeDone, setChallengeDone] = useState<[boolean, boolean, boolean]>([false, false, false]);
   const [challengeBonus, setChallengeBonus] = useState<[boolean, boolean, boolean]>([false, false, false]);
   const [lastResult, setLastResult] = useState<{ challenges: { text: string; difficulty: string }[] } | null>(null);
 
@@ -345,7 +344,6 @@ export default function Home() {
     setFeedback(0);
     setFeedbackComment("");
     setFeedbackSent(false);
-    setChallengeDone([false, false, false]);
 
     if (!anonymousUserId) {
       setError("初期化中です。数秒後にもう一度お試しください。");
@@ -817,7 +815,7 @@ export default function Home() {
               </div>
 
               <div className="mt-5">
-                <div className="text-sm font-semibold text-slate-900">📋 今週のチャレンジ（できそうなものだけでOK！）</div>
+                <div className="text-sm font-semibold text-slate-900">💡 今週のチャレンジ（できそうなものだけでOK）</div>
                 <div className="mt-2 space-y-2">
                   {(result.challenges ?? []).map((c, i) => {
                     const difficulty = c.difficulty ?? (i === 0 ? "easy" : i === 1 ? "medium" : "challenge");
@@ -825,28 +823,16 @@ export default function Home() {
                     const label = difficulty === "easy" ? "【簡単】" : difficulty === "medium" ? "【中級】" : "【挑戦】";
                     const bonus = difficulty === "easy" ? "+1点" : difficulty === "medium" ? "+2点" : "+3点";
                     return (
-                      <label key={i} className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3">
-                        <input
-                          type="checkbox"
-                          checked={challengeDone[i]}
-                          onChange={(e) => {
-                            setChallengeDone((prev) => {
-                              const next: [boolean, boolean, boolean] = [prev[0], prev[1], prev[2]];
-                              next[i as 0 | 1 | 2] = e.target.checked;
-                              return next;
-                            });
-                          }}
-                          className="mt-1 h-4 w-4 accent-blue-500"
-                        />
+                      <div key={i} className="rounded-xl border border-slate-200 bg-white px-3 py-3">
                         <span className="text-sm text-slate-800">
                           {icon} {label} {c.text} → {bonus}
                         </span>
-                      </label>
+                      </div>
                     );
                   })}
                 </div>
                 <p className="mt-3 text-sm text-slate-600">
-                  💡 できなくても減点なし！挑戦した分だけボーナス加点されます
+                  挑戦した分だけ次回ボーナス加点されます！
                 </p>
               </div>
 
