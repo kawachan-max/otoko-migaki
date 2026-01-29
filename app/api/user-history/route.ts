@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getLatestAnswers } from "@/lib/history";
+import { getLatestAnswers, getLatestResult } from "@/lib/history";
 
 export async function GET(req: Request) {
   try {
@@ -9,8 +9,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "anonymous_user_id が必要です。" }, { status: 400 });
     }
 
-    const answers = await getLatestAnswers(anonymousUserId.trim());
-    return NextResponse.json({ answers });
+    const [answers, lastResult] = await Promise.all([
+      getLatestAnswers(anonymousUserId.trim()),
+      getLatestResult(anonymousUserId.trim()),
+    ]);
+    return NextResponse.json({ answers, lastResult });
   } catch (e) {
     const message = e instanceof Error ? e.message : "不明なエラーが発生しました。";
     return NextResponse.json({ error: message }, { status: 500 });

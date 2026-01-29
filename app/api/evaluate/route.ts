@@ -4,6 +4,10 @@ import { createServerClient } from "@/lib/supabase";
 import { getGoodExamples } from "@/lib/learning";
 import { getUserHistory, getLatestFeedback } from "@/lib/history";
 
+type ChallengeDifficulty = "easy" | "medium" | "challenge";
+
+type ChallengeItem = { text: string; difficulty: ChallengeDifficulty };
+
 type EvaluateRequest = {
   anonymous_user_id: string;
   form: {
@@ -16,12 +20,18 @@ type EvaluateRequest = {
     region: string;
   };
   actions: string[];
+  /** 前回のチャレンジ達成状況（従来形式）。達成分だけボーナス加点 */
+  challenge_bonus?: [boolean, boolean, boolean];
+  /** 前回のチャレンジ達成状況。簡単+1、中級+2、挑戦+3、最大+6点 */
+  challenge_easy_done?: boolean;
+  challenge_medium_done?: boolean;
+  challenge_hard_done?: boolean;
 };
 
 type EvaluateResponse = {
   evaluation_id: string;
   persona_type: string;
-  overall_score: number; // 0-100（10カテゴリ合計）
+  overall_score: number; // 0-100（10カテゴリ合計）+ チャレンジボーナス
   category_scores: {
     cleanliness: number;
     fashion: number;
@@ -35,12 +45,14 @@ type EvaluateResponse = {
     consistency: number;
   };
   coach_comment: [string, string, string, string];
-  missions: [string, string, string];
+  challenges: [ChallengeItem, ChallengeItem, ChallengeItem];
   template: { title: string; content: string };
   is_first_time: boolean;
   visit_count: number;
   growth_comment: string | null;
   changes_from_last: { improved: string[]; needs_work: string[] } | null;
+  /** 今回加算したチャレンジボーナス点（0〜6） */
+  challengeBonus: number;
 };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -91,6 +103,39 @@ function normalizeChangesFromLast(v: unknown): { improved: string[]; needs_work:
   return { improved: improvedStr, needs_work: needsWorkStr };
 }
 
+const DIFFICULTIES: ChallengeDifficulty[] = ["easy", "medium", "challenge"];
+
+function parseDifficulty(v: unknown): ChallengeDifficulty {
+  const s = getString(v);
+  if (s === "easy" || s === "medium" || s === "challenge") return s;
+  return "easy";
+}
+
+function normalizeChallenges(raw: unknown, missionsFallback: string[]): EvaluateResponse["challenges"] {
+  const arr = getArray(raw);
+  if (arr && arr.length >= 3) {
+    return [
+      {
+        text: getString((arr[0] as Record<string, unknown>)?.text) ?? getString(arr[0]) ?? missionsFallback[0],
+        difficulty: parseDifficulty((arr[0] as Record<string, unknown>)?.difficulty) ?? DIFFICULTIES[0],
+      },
+      {
+        text: getString((arr[1] as Record<string, unknown>)?.text) ?? getString(arr[1]) ?? missionsFallback[1],
+        difficulty: parseDifficulty((arr[1] as Record<string, unknown>)?.difficulty) ?? DIFFICULTIES[1],
+      },
+      {
+        text: getString((arr[2] as Record<string, unknown>)?.text) ?? getString(arr[2]) ?? missionsFallback[2],
+        difficulty: parseDifficulty((arr[2] as Record<string, unknown>)?.difficulty) ?? DIFFICULTIES[2],
+      },
+    ];
+  }
+  return [
+    { text: missionsFallback[0], difficulty: "easy" },
+    { text: missionsFallback[1], difficulty: "medium" },
+    { text: missionsFallback[2], difficulty: "challenge" },
+  ];
+}
+
 function normalizeResponse(
   raw: unknown,
   opts: { visit_count: number; is_first_time: boolean }
@@ -98,7 +143,11 @@ function normalizeResponse(
   const root = isRecord(raw) ? raw : {};
   const category = isRecord(root.category_scores) ? root.category_scores : {};
   const coach = getArray(root.coach_comment) ?? [];
-  const missions = getArray(root.missions) ?? [];
+  const missionsFallback = [
+    getString((getArray(root.missions) ?? [])[0]) ?? "プロフィール写真を1枚だけ改善（自然光・笑顔・清潔感）。",
+    getString((getArray(root.missions) ?? [])[1]) ?? "会話の『質問→共感→小話』を1セット練習してメモ。",
+    getString((getArray(root.missions) ?? [])[2]) ?? "出会いの場を1つ増やす（アプリ/趣味/紹介のどれか）。",
+  ];
   const template = isRecord(root.template) ? root.template : {};
 
   const categoryScores: EvaluateResponse["category_scores"] = {
@@ -115,6 +164,7 @@ function normalizeResponse(
   };
 
   const sum = Object.values(categoryScores).reduce((a, b) => a + b, 0);
+  const challenges = normalizeChallenges(root.challenges, missionsFallback);
   const res: EvaluateResponse = {
     evaluation_id: "",
     persona_type: getString(root.persona_type) ?? "改善スタート型",
@@ -124,23 +174,20 @@ function normalizeResponse(
       getString(coach[0]) ?? "今の努力を言語化できている時点で、もう前に進めています。",
       getString(coach[1]) ?? "〇〇についてどう感じた？一度、自分に問いかけてみて。",
       getString(coach[2]) ?? "改善点は1つに絞って、成果が出やすい順に積み上げましょう。",
-      getString(coach[3]) ?? "今日から7日だけ、1日1つの小さな行動に落として続けてみてください。",
+      getString(coach[3]) ?? "一歩ずつで大丈夫。続けることが一番の強みだよ。",
     ],
-    missions: [
-      getString(missions[0]) ?? "プロフィール写真を1枚だけ改善（自然光・笑顔・清潔感）。",
-      getString(missions[1]) ?? "会話の『質問→共感→小話』を1セット練習してメモ。",
-      getString(missions[2]) ?? "出会いの場を1つ増やす（アプリ/趣味/紹介のどれか）。",
-    ],
+    challenges,
     template: {
-      title: getString(template.title) ?? "7日改善プラン（コピペ用）",
+      title: getString(template.title) ?? "今週の改善プラン（コピペ用）",
       content:
         getString(template.content) ??
-        "【今週の1点改善】\n- （ここに改善点を1つ書く）\n\n【7日ミッション】\n- Day1:\n- Day2:\n- Day3:\n- Day4:\n- Day5:\n- Day6:\n- Day7:\n\n【振り返り】\n- できたこと:\n- 次に変える1つ:\n",
+        "【今週の1点改善】\n- （ここに改善点を1つ書く）\n\n【今週のチャレンジ】\n- 簡単:\n- 中級:\n- 挑戦:\n\n【振り返り】\n- できたこと:\n- 次に変える1つ:\n",
     },
     is_first_time: opts.is_first_time,
     visit_count: opts.visit_count,
     growth_comment: opts.is_first_time ? null : getString(root.growth_comment) ?? null,
     changes_from_last: opts.is_first_time ? null : normalizeChangesFromLast(root.changes_from_last),
+    challengeBonus: 0, // 下でボーナス計算後に上書き
   };
 
   return res;
@@ -310,12 +357,18 @@ export async function POST(req: Request) {
       "必ず4つの「異なる」文章を返すこと。内容が被らないこと。",
       "1. 承認文：ユーザーの具体的な努力を1つ取り上げて褒める（行動入力から具体的に1つ指摘すること）",
       "2. 気づきの問いかけ：「〇〇についてどう感じた？」「なぜそうしようと思った？」など、自己理解を促す質問を1つ",
-      "3. 改善点：最も効果的な改善ポイントを1つだけ提案（説教しない・1点に絞る）",
-      "4. 次の一手：今日すぐできる具体的なアクションを1つだけ示す",
-      "重要：4つの文章は絶対に重複させないこと。それぞれ異なる内容にすること。",
+      "3. 改善ポイント：最も効果的な改善ポイントを1つだけ具体的に提案（説教しない・1点に絞る）",
+      "4. 応援メッセージ：前向きな一言で締める（「次の一手」とは別に、励ましや背中を押す一言）",
+      "重要：4つの文章は絶対に重複させないこと。それぞれ異なる内容にすること。チャレンジと被らないこと。",
       "",
       "【困りごと別の対応方針】",
-      "ユーザーが選択した「困りごと」に基づいて、ミッションとコーチングの重点を決めること。複数選択時は全てに対応するミッションを含め、最も深刻そうな困りごとを重点に。ミッションは3つに絞る。",
+      "ユーザーが選択した「困りごと」に基づいて、チャレンジとコーチングの重点を決めること。複数選択時は全てに対応するチャレンジを含め、最も深刻そうな困りごとを重点に。",
+      "",
+      "【今週のチャレンジ challenges】3つ生成すること。難易度を分けて生成すること。",
+      "1つ目: 簡単（difficulty: \"easy\"）— 日常で気軽にできること。",
+      "2つ目: 中級（difficulty: \"medium\"）— 少し勇気がいること。",
+      "3つ目: 挑戦（difficulty: \"challenge\"）— 大きな一歩になること。",
+      "各チャレンジは1文で具体的に。JSONでは challenges: [{ text: \"...\", difficulty: \"easy\" }, ...] の形で返すこと。",
       "",
       "【評価理由】",
       "なぜこの点数なのか、ユーザーが理解できるように、coach_commentや各カテゴリのスコアの根拠を意識して判定すること。",
@@ -374,13 +427,17 @@ export async function POST(req: Request) {
       "【出力JSON仕様】",
       "persona_type は上記5タイプのいずれか1つを、入力に基づいて選ぶこと。",
       "category_scores は10カテゴリそれぞれに1〜10の整数を付ける。overall_score は10カテゴリの合計（0〜100の整数）。",
-      "coach_comment は4要素の配列：[承認文, 気づきの問いかけ, 改善点, 次の一手] の順。",
+      "coach_comment は4要素の配列：[承認文, 気づきの問いかけ, 改善ポイント, 応援メッセージ] の順。",
       '{',
       '  "persona_type": "選んだタイプをそのまま文字列で",',
       '  "overall_score": 50,',
       '  "category_scores": { "cleanliness": 5, "fashion": 5, "fitness": 5, "meetingActions": 5, "dateActions": 5, "lifestyle": 5, "speakingSkill": 5, "listeningSkill": 5, "positiveThinking": 5, "consistency": 5 },',
-      '  "coach_comment": ["承認文（努力を1つ具体指名）", "気づきの問いかけ（1つ）", "改善点（1つだけ）", "次の一手（今日できる1アクション）"],',
-      '  "missions": ["ミッション1", "ミッション2", "ミッション3"],',
+      '  "coach_comment": ["承認文（努力を1つ具体指名）", "気づきの問いかけ（1つ）", "改善ポイント（1つだけ具体的に）", "応援メッセージ（前向きな一言で締める）"],',
+      '  "challenges": [',
+      '    { "text": "簡単なチャレンジ（日常で気軽にできること・1文）", "difficulty": "easy" },',
+      '    { "text": "中級のチャレンジ（少し勇気がいること・1文）", "difficulty": "medium" },',
+      '    { "text": "挑戦のチャレンジ（大きな一歩になること・1文）", "difficulty": "challenge" }',
+      '  ],',
       '  "template": { "title": "テンプレ名", "content": "コピペ用テキスト" },',
       `  "is_first_time": ${isFirstTime},`,
       `  "visit_count": ${visitCount},`,
@@ -395,8 +452,8 @@ export async function POST(req: Request) {
       "制約:",
       "- persona_type は入力分析に基づき5タイプから1つだけ選ぶ。固定で「アプリ改善型」にしないこと。",
       "- 各category_scoresは1〜10の整数。overall_scoreは10カテゴリの合計で0〜100の整数。",
-      "- coach_commentは必ず4文で、順に「承認文・気づきの問いかけ・改善点・次の一手」。重複禁止。",
-      "- missionsは7日以内に実行できる具体的行動（各1文）",
+      "- coach_commentは必ず4文で、順に「承認文・気づきの問いかけ・改善ポイント・応援メッセージ」。重複禁止。",
+      "- challengesは3つ。1つ目easy、2つ目medium、3つ目challenge。各1文で具体的に。",
       "- template.contentは日本語で、そのまま貼れるテキスト。箇条書きOK",
       "- is_first_time と visit_count は上記の値のまま返すこと。",
       "- 2回目以降の場合、growth_comment と changes_from_last を必ず記入すること。",
@@ -421,6 +478,17 @@ export async function POST(req: Request) {
     const normalized = normalizeResponse(parsed, { visit_count: visitCount, is_first_time: isFirstTime });
     normalized.evaluation_id = ""; // 下で row.id を代入するまで未設定
 
+    // 今回のスコアにチャレンジ達成ボーナスを加点（簡単+1、中級+2、挑戦+3、最大+6点、100点上限）
+    const easyDone = body.challenge_easy_done === true || (Array.isArray(body.challenge_bonus) && body.challenge_bonus[0] === true);
+    const mediumDone = body.challenge_medium_done === true || (Array.isArray(body.challenge_bonus) && body.challenge_bonus[1] === true);
+    const hardDone = body.challenge_hard_done === true || (Array.isArray(body.challenge_bonus) && body.challenge_bonus[2] === true);
+    let bonusPoints = 0;
+    if (easyDone) bonusPoints += 1;
+    if (mediumDone) bonusPoints += 2;
+    if (hardDone) bonusPoints += 3;
+    normalized.challengeBonus = bonusPoints;
+    normalized.overall_score = Math.min(100, normalized.overall_score + bonusPoints);
+
     let supabase;
     try {
       supabase = createServerClient();
@@ -432,11 +500,15 @@ export async function POST(req: Request) {
       );
     }
 
+    const challenges = normalized.challenges;
     const insertPayload = {
       anonymous_user_id: String(body.anonymous_user_id ?? ""),
       answers: JSON.parse(JSON.stringify(body.form ?? {})),
       actions: body.actions ?? [],
       result: JSON.parse(JSON.stringify(normalized)),
+      challenge_easy: challenges[0]?.text ?? null,
+      challenge_medium: challenges[1]?.text ?? null,
+      challenge_hard: challenges[2]?.text ?? null,
     };
 
     const { data: row, error: insertError } = await supabase
@@ -461,6 +533,23 @@ export async function POST(req: Request) {
         },
         { status: 500 }
       );
+    }
+
+    // 前回の診断行にチャレンジ達成フラグを記録（今回のリクエストの _done は前回分）
+    const prevRow = history[0];
+    if (prevRow?.id && (body.challenge_easy_done !== undefined || body.challenge_medium_done !== undefined || body.challenge_hard_done !== undefined || (Array.isArray(body.challenge_bonus) && body.challenge_bonus.length >= 3))) {
+      const prevDone = {
+        challenge_easy_done: body.challenge_easy_done === true || (Array.isArray(body.challenge_bonus) && body.challenge_bonus[0] === true),
+        challenge_medium_done: body.challenge_medium_done === true || (Array.isArray(body.challenge_bonus) && body.challenge_bonus[1] === true),
+        challenge_hard_done: body.challenge_hard_done === true || (Array.isArray(body.challenge_bonus) && body.challenge_bonus[2] === true),
+      };
+      const { error: updateErr } = await supabase
+        .from("evaluations")
+        .update(prevDone)
+        .eq("id", prevRow.id);
+      if (updateErr) {
+        console.error("[evaluate] Previous row challenge_done update error:", updateErr);
+      }
     }
 
     const { error: logError } = await supabase.from("learning_logs").insert({

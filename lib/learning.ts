@@ -8,7 +8,8 @@ export type GoodExample = {
     overall_score: number;
     category_scores: Record<string, number>;
     coach_comment: string[];
-    missions: string[];
+    missions?: string[];
+    challenges?: { text: string; difficulty: string }[];
     template: { title: string; content: string };
   };
   comment?: string;

@@ -42,12 +42,14 @@ type EvaluateResponse = {
     consistency: number;
   };
   coach_comment: [string, string, string, string];
-  missions: [string, string, string];
+  challenges: { text: string; difficulty: "easy" | "medium" | "challenge" }[];
   template: { title: string; content: string };
   is_first_time?: boolean;
   visit_count?: number;
   growth_comment?: string | null;
   changes_from_last?: { improved: string[]; needs_work: string[] } | null;
+  /** 今回加算したチャレンジボーナス点（0〜6） */
+  challengeBonus?: number;
 };
 
 const meetMethodOptions: MeetMethod[] = ["アプリ", "紹介", "職場学校", "趣味", "イベント"];
@@ -237,7 +239,24 @@ export default function Home() {
   const [result, setResult] = useState<EvaluateResponse | null>(null);
 
   // result UI states
-  const [missionDone, setMissionDone] = useState<[boolean, boolean, boolean]>([false, false, false]);
+  const [challengeDone, setChallengeDone] = useState<[boolean, boolean, boolean]>([false, false, false]);
+  const [challengeBonus, setChallengeBonus] = useState<[boolean, boolean, boolean]>([false, false, false]);
+  const [lastResult, setLastResult] = useState<{ challenges: { text: string; difficulty: string }[] } | null>(null);
+
+  /** 診断に送る行動記録（自由記述 + チェックしたチャレンジを【チャレンジ達成】として追加、最大10件） */
+  const actionsToSend = useMemo(() => {
+    const base = actions;
+    if (lastResult?.challenges?.length === 3) {
+      const fromChallenges = lastResult.challenges
+        .filter((_, i) => challengeBonus[i])
+        .map((c) => `【チャレンジ達成】${c.text}`);
+      return [...base, ...fromChallenges].slice(0, 10);
+    }
+    return base;
+  }, [actions, lastResult, challengeBonus]);
+
+  /** 診断ボタン有効：初回は行動記録必須、2回目以降は行動記録またはチャレンジチェック1つ以上（actionsToSend に反映） */
+  const canSubmitByActions = actionsToSend.length >= 1;
   const [feedback, setFeedback] = useState<number>(0);
   const [feedbackComment, setFeedbackComment] = useState<string>("");
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
@@ -276,9 +295,12 @@ export default function Home() {
     const params = new URLSearchParams({ anonymous_user_id: anonymousUserId });
     fetch(`/api/user-history?${params}`)
       .then((res) => res.json())
-      .then((data: { answers?: Record<string, unknown> }) => {
+      .then((data: { answers?: Record<string, unknown>; lastResult?: { challenges: { text: string; difficulty: string }[] } | null }) => {
         const a = data?.answers;
         setHasHistory(typeof a === "object" && a !== null);
+        if (data?.lastResult?.challenges?.length === 3) {
+          setLastResult({ challenges: data.lastResult.challenges });
+        }
         if (typeof a === "object" && a !== null) {
           const ageVal = a.age;
           if (typeof ageVal === "string" && ["18-22", "23-29", "30-39", "40+"].includes(ageVal)) {
@@ -323,14 +345,14 @@ export default function Home() {
     setFeedback(0);
     setFeedbackComment("");
     setFeedbackSent(false);
-    setMissionDone([false, false, false]);
+    setChallengeDone([false, false, false]);
 
     if (!anonymousUserId) {
       setError("初期化中です。数秒後にもう一度お試しください。");
       return;
     }
-    if (actions.length < 1 || actions.length > 10) {
-      setError("1つ以上入力してね");
+    if (actionsToSend.length < 1 || actionsToSend.length > 10) {
+      setError("行動記録かチャレンジのチェックを1つ以上入れてね（最大10件）");
       return;
     }
     if (meetMethods.length === 0) {
@@ -355,7 +377,15 @@ export default function Home() {
           time_budget: timeBudget,
           region,
         },
-        actions,
+        actions: actionsToSend,
+        ...(lastResult?.challenges?.length === 3
+          ? {
+              challenge_bonus: challengeBonus,
+              challenge_easy_done: challengeBonus[0],
+              challenge_medium_done: challengeBonus[1],
+              challenge_hard_done: challengeBonus[2],
+            }
+          : {}),
       };
 
       const res = await fetch("/api/evaluate", {
@@ -638,9 +668,48 @@ export default function Home() {
             />
             <p className="mt-2 text-xs text-slate-500">具体的に書くほど、的確なアドバイスができるよ！</p>
             <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
-              <span>入力数: {actions.length}個</span>
+              <span>入力数: {actionsToSend.length}個</span>
               <span className="tabular-nums">匿名ID: {anonymousUserId ? anonymousUserId.slice(0, 8) : "..."}</span>
             </div>
+
+            {lastResult?.challenges?.length === 3 && (
+              <>
+                <hr className="my-5 border-slate-200" />
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-slate-900">🎁 前回のチャレンジ達成ボーナス</h3>
+                  <p className="text-xs text-slate-600">
+                    前回出したチャレンジのうち、できたものにチェックを入れてください。達成分だけ今回のスコアにボーナス加点されます。
+                  </p>
+                  <div className="space-y-2">
+                    {lastResult.challenges.map((c, i) => {
+                      const diff = c.difficulty ?? (i === 0 ? "easy" : i === 1 ? "medium" : "challenge");
+                      const icon = diff === "easy" ? "🟢" : diff === "medium" ? "🟡" : "🔴";
+                      const label = diff === "easy" ? "【簡単】" : diff === "medium" ? "【中級】" : "【挑戦】";
+                      const bonus = diff === "easy" ? "+1点" : diff === "medium" ? "+2点" : "+3点";
+                      return (
+                        <label key={i} className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                          <input
+                            type="checkbox"
+                            checked={challengeBonus[i]}
+                            onChange={(e) => {
+                              setChallengeBonus((prev) => {
+                                const next: [boolean, boolean, boolean] = [prev[0], prev[1], prev[2]];
+                                next[i as 0 | 1 | 2] = e.target.checked;
+                                return next;
+                              });
+                            }}
+                            className="mt-1 h-4 w-4 accent-blue-500"
+                          />
+                          <span className="text-sm text-slate-800">
+                            {icon} {label} {c.text} → {bonus}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
 
             {error && (
               <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -651,7 +720,7 @@ export default function Home() {
             <button
               type="button"
               onClick={onSubmit}
-              disabled={isLoading || actions.length < 1}
+              disabled={isLoading || !canSubmitByActions}
               className={[
                 "mt-4 w-full rounded-2xl bg-blue-500 px-4 py-4 text-base font-semibold text-white shadow-sm transition",
                 "hover:bg-blue-600 active:bg-blue-700",
@@ -660,6 +729,12 @@ export default function Home() {
             >
               {isLoading ? "診断中..." : "診断する"}
             </button>
+
+            {!canSubmitByActions && !isLoading && (
+              <p className="mt-2 text-center text-xs text-slate-500">
+                行動記録を入力するか、チャレンジにチェックを入れてください
+              </p>
+            )}
 
             {hasHistory && !isFormExpanded && (
               <button
@@ -687,6 +762,11 @@ export default function Home() {
                   <div className="mt-1 text-2xl font-bold tabular-nums text-slate-900">
                     {clampOverallScore(result.overall_score)}<span className="text-lg font-semibold text-slate-500">/100点</span>
                   </div>
+                  {(result.challengeBonus ?? 0) > 0 && (
+                    <p className="mt-1 text-sm font-medium text-amber-600">
+                      🎁 チャレンジボーナス: +{result.challengeBonus}点
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -737,26 +817,37 @@ export default function Home() {
               </div>
 
               <div className="mt-5">
-                <div className="text-sm font-semibold text-slate-900">7日ミッション（3つ）</div>
+                <div className="text-sm font-semibold text-slate-900">📋 今週のチャレンジ（できそうなものだけでOK！）</div>
                 <div className="mt-2 space-y-2">
-                  {result.missions.map((m, i) => (
-                    <label key={i} className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3">
-                      <input
-                        type="checkbox"
-                        checked={missionDone[i]}
-                        onChange={(e) => {
-                          setMissionDone((prev) => {
-                            const next: [boolean, boolean, boolean] = [prev[0], prev[1], prev[2]];
-                            next[i as 0 | 1 | 2] = e.target.checked;
-                            return next;
-                          });
-                        }}
-                        className="mt-1 h-4 w-4 accent-blue-500"
-                      />
-                      <span className="text-sm text-slate-800">{m}</span>
-                    </label>
-                  ))}
+                  {(result.challenges ?? []).map((c, i) => {
+                    const difficulty = c.difficulty ?? (i === 0 ? "easy" : i === 1 ? "medium" : "challenge");
+                    const icon = difficulty === "easy" ? "🟢" : difficulty === "medium" ? "🟡" : "🔴";
+                    const label = difficulty === "easy" ? "【簡単】" : difficulty === "medium" ? "【中級】" : "【挑戦】";
+                    const bonus = difficulty === "easy" ? "+1点" : difficulty === "medium" ? "+2点" : "+3点";
+                    return (
+                      <label key={i} className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3">
+                        <input
+                          type="checkbox"
+                          checked={challengeDone[i]}
+                          onChange={(e) => {
+                            setChallengeDone((prev) => {
+                              const next: [boolean, boolean, boolean] = [prev[0], prev[1], prev[2]];
+                              next[i as 0 | 1 | 2] = e.target.checked;
+                              return next;
+                            });
+                          }}
+                          className="mt-1 h-4 w-4 accent-blue-500"
+                        />
+                        <span className="text-sm text-slate-800">
+                          {icon} {label} {c.text} → {bonus}
+                        </span>
+                      </label>
+                    );
+                  })}
                 </div>
+                <p className="mt-3 text-sm text-slate-600">
+                  💡 できなくても減点なし！挑戦した分だけボーナス加点されます
+                </p>
               </div>
 
               <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">

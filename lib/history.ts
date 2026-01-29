@@ -1,5 +1,7 @@
 import { createServerClient } from "@/lib/supabase";
 
+export type ChallengeItem = { text: string; difficulty: string };
+
 export type EvaluationHistoryRow = {
   id: string;
   answers: Record<string, unknown>;
@@ -10,11 +12,14 @@ export type EvaluationHistoryRow = {
     category_scores?: Record<string, number>;
     coach_comment?: string[];
     missions?: string[];
+    challenges?: ChallengeItem[];
     template?: { title?: string; content?: string };
   };
   created_at: string;
   feedback_score: number | null;
 };
+
+export type LastResult = { challenges: ChallengeItem[] } | null;
 
 /**
  * 同じ anonymous_user_id の過去の判定を最新5件取得
@@ -65,6 +70,47 @@ export async function getLatestAnswers(anonymousUserId: string): Promise<LatestA
   const answers = data?.answers;
   if (typeof answers !== "object" || answers === null) return null;
   return answers as Record<string, unknown>;
+}
+
+const DIFFICULTIES: ChallengeItem["difficulty"][] = ["easy", "medium", "challenge"];
+
+/**
+ * 最新1件の判定の result から challenges を取得。前回のチャレンジ達成ボーナス表示用。
+ */
+export async function getLatestResult(anonymousUserId: string): Promise<LastResult> {
+  if (!anonymousUserId.trim()) return null;
+
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("evaluations")
+    .select("result")
+    .eq("anonymous_user_id", anonymousUserId.trim())
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data?.result || typeof data.result !== "object") return null;
+
+  const result = data.result as EvaluationHistoryRow["result"];
+  const challenges = result.challenges;
+  if (Array.isArray(challenges) && challenges.length >= 3) {
+    const items: ChallengeItem[] = challenges.slice(0, 3).map((c, i) => ({
+      text: typeof c?.text === "string" ? c.text : "",
+      difficulty: typeof c?.difficulty === "string" ? c.difficulty : DIFFICULTIES[i] ?? "easy",
+    }));
+    if (items.every((x) => x.text)) return { challenges: items };
+  }
+  const missions = result.missions;
+  if (Array.isArray(missions) && missions.length >= 3) {
+    return {
+      challenges: [
+        { text: missions[0] ?? "", difficulty: "easy" },
+        { text: missions[1] ?? "", difficulty: "medium" },
+        { text: missions[2] ?? "", difficulty: "challenge" },
+      ],
+    };
+  }
+  return null;
 }
 
 const FEEDBACK_COMMENT_MAX_LENGTH = 200;
