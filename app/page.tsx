@@ -473,12 +473,12 @@ export default function Home() {
           ) : null}
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-base font-semibold text-slate-900">今日やったこと</h2>
-            <p className="mt-1 text-sm text-slate-600">今日やったことを書いてね！（改行で複数入力できるよ）</p>
+            <h2 className="text-base font-semibold text-slate-900">男磨きの行動記録</h2>
+            <p className="mt-1 text-sm text-slate-600">悩み解決や目標達成のために今日頑張ったことは？（改行で複数入力できるよ）</p>
             <textarea
               value={actionsText}
               onChange={(e) => setActionsText(e.target.value)}
-              placeholder={"例：マッチングアプリでメッセージを送った\n　　職場の人に話しかけた\n　　筋トレをした"}
+              placeholder={"例：マッチングアプリでメッセージを送った、筋トレした、新しい服を買った"}
               rows={7}
               className="mt-3 w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm leading-6 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
