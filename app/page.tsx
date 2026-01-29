@@ -819,7 +819,7 @@ export default function Home() {
                 </div>
                 <div className="mt-4 space-y-1">
                   <label className="text-sm text-slate-700">
-                    💬 一言で、あなた専用のコーチに育つ＆同じ悩みの仲間も救えます（任意）
+                    感想を書いて送信すると、あなた専用へと精度が上がります。（任意）
                   </label>
                   <textarea
                     value={feedbackComment}
