@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
+import { createServerClient } from "@/lib/supabase";
 
 type EvaluateRequest = {
   anonymous_user_id: string;
@@ -16,6 +17,7 @@ type EvaluateRequest = {
 };
 
 type EvaluateResponse = {
+  evaluation_id: string;
   persona_type: string;
   overall_score: number;
   category_scores: {
@@ -174,8 +176,55 @@ export async function POST(req: Request) {
 
     const parsed = safeJsonParse(text);
     const normalized = normalizeResponse(parsed);
-    return NextResponse.json(normalized);
+
+    let supabase;
+    try {
+      supabase = createServerClient();
+    } catch (clientErr) {
+      console.error("[evaluate] Supabase client error:", clientErr);
+      return NextResponse.json(
+        { error: "Supabase の初期化に失敗しました。環境変数を確認してください。" },
+        { status: 500 }
+      );
+    }
+
+    const insertPayload = {
+      anonymous_user_id: String(body.anonymous_user_id ?? ""),
+      answers: JSON.parse(JSON.stringify(body.form ?? {})),
+      actions: body.actions ?? [],
+      result: JSON.parse(JSON.stringify(normalized)),
+    };
+
+    const { data: row, error: insertError } = await supabase
+      .from("evaluations")
+      .insert(insertPayload)
+      .select("id")
+      .single();
+
+    if (insertError || !row?.id) {
+      console.error("[evaluate] Supabase insert error:", {
+        message: insertError?.message,
+        code: insertError?.code,
+        details: insertError?.details,
+        hint: insertError?.hint,
+        full: insertError,
+      });
+      console.error("[evaluate] Insert payload keys:", Object.keys(insertPayload));
+      return NextResponse.json(
+        {
+          error: "判定結果の保存に失敗しました。",
+          debug: process.env.NODE_ENV === "development" ? insertError?.message : undefined,
+        },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      ...normalized,
+      evaluation_id: row.id,
+    });
   } catch (e) {
+    console.error("[evaluate] Unexpected error:", e);
     const message = e instanceof Error ? e.message : "不明なエラーが発生しました。";
     return NextResponse.json({ error: message }, { status: 500 });
   }

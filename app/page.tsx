@@ -26,6 +26,7 @@ type EvaluateRequest = {
 };
 
 type EvaluateResponse = {
+  evaluation_id?: string;
   persona_type: string;
   overall_score: number; // 1-5
   category_scores: {
@@ -105,6 +106,8 @@ export default function Home() {
   const [missionDone, setMissionDone] = useState<[boolean, boolean, boolean]>([false, false, false]);
   const [feedback, setFeedback] = useState<number>(0);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const [feedbackSent, setFeedbackSent] = useState(false);
+  const [feedbackSending, setFeedbackSending] = useState(false);
 
   useEffect(() => {
     const key = "anonymous_user_id";
@@ -123,6 +126,7 @@ export default function Home() {
     setResult(null);
     setCopyState("idle");
     setFeedback(0);
+    setFeedbackSent(false);
     setMissionDone([false, false, false]);
 
     if (!anonymousUserId) {
@@ -174,6 +178,38 @@ export default function Home() {
       setError(e instanceof Error ? e.message : "不明なエラーが発生しました。");
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function submitFeedback(score: number) {
+    if (!result?.evaluation_id) return;
+    setFeedback(score);
+    if (feedbackSent) return;
+    setFeedbackSending(true);
+    try {
+      const res = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          evaluation_id: result.evaluation_id,
+          helpful_score: score,
+          mismatch_areas: [],
+          comment: undefined,
+        }),
+      });
+      const data: unknown = await res.json().catch(() => null);
+      if (!res.ok) {
+        const msg =
+          typeof data === "object" && data !== null && "error" in data && typeof (data as { error?: unknown }).error === "string"
+            ? (data as { error: string }).error
+            : "送信に失敗しました。";
+        throw new Error(msg);
+      }
+      setFeedbackSent(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "送信に失敗しました。");
+    } finally {
+      setFeedbackSending(false);
     }
   }
 
@@ -437,10 +473,12 @@ export default function Home() {
                     <button
                       key={n}
                       type="button"
-                      onClick={() => setFeedback(n)}
+                      onClick={() => submitFeedback(n)}
+                      disabled={feedbackSending}
                       className={[
-                        "h-10 w-10 rounded-xl border text-lg",
+                        "h-10 w-10 rounded-xl border text-lg transition",
                         feedback >= n ? "border-blue-200 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-400",
+                        "hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed",
                       ].join(" ")}
                       aria-label={`フィードバック ${n} / 5`}
                     >
@@ -448,7 +486,15 @@ export default function Home() {
                     </button>
                   ))}
                 </div>
-                {feedback > 0 && <p className="mt-2 text-xs text-slate-500">ありがとう！評価: {feedback}/5</p>}
+                {feedback > 0 && !feedbackSent && feedbackSending && (
+                  <p className="mt-2 text-xs text-slate-500">送信中...</p>
+                )}
+                {feedbackSent && (
+                  <p className="mt-2 text-sm font-medium text-blue-600">フィードバックありがとう！</p>
+                )}
+                {feedback > 0 && !feedbackSent && !feedbackSending && (
+                  <p className="mt-2 text-xs text-slate-500">評価: {feedback}/5（星を押すと送信されます）</p>
+                )}
               </div>
             </section>
           )}
