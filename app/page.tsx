@@ -102,17 +102,90 @@ const CATEGORY_DISPLAY: { key: keyof EvaluateResponse["category_scores"]; label:
 
 type HistoryItem = { attempt: number; score: number; date: string };
 
-function WeeklyReportLineChart({ history }: { history: HistoryItem[] }) {
-  if (!history.length) return null;
-  const data = history.map((h) => ({ ...h, xLabel: `${h.attempt}` }));
+function getXAxisTicksForAll(total: number): number[] {
+  if (total <= 0) return [];
+  const last = total;
+  let ticks: number[];
+  if (total <= 20) ticks = [1, 5, 10, 15, 20].filter((t) => t <= total);
+  else if (total <= 50) ticks = [1, 10, 25, 50].filter((t) => t <= total);
+  else if (total <= 100) ticks = [1, 25, 50, 75, 100].filter((t) => t <= total);
+  else if (total <= 200) ticks = [1, 50, 100, 150, 200].filter((t) => t <= total);
+  else if (total <= 500) ticks = [1, 100, 200, 300, 400, 500].filter((t) => t <= total);
+  else if (total <= 1000) ticks = [1, 200, 400, 600, 800, 1000].filter((t) => t <= total);
+  else {
+    const step = total <= 2000 ? 500 : Math.ceil(total / 5 / 500) * 500;
+    ticks = [1];
+    for (let v = step; v < total; v += step) ticks.push(v);
+  }
+  if (last > 0 && !ticks.includes(last)) ticks = [...ticks, last].sort((a, b) => a - b);
+  return ticks;
+}
+
+type GrowthChartTab = "last10" | "all";
+
+function GrowthRecordChart({ history }: { history: HistoryItem[] }) {
+  const [tab, setTab] = useState<GrowthChartTab>("last10");
+  const totalAttempts = history.length;
+  if (!totalAttempts) return null;
+
+  const last10 = history.slice(-10);
+  const dataLast10 = last10;
+  const dataAll = history;
+  const data = tab === "last10" ? dataLast10 : dataAll;
+  const ticksAll = getXAxisTicksForAll(totalAttempts);
+  const last10Min = dataLast10.length > 0 ? dataLast10[0].attempt : 1;
+  const last10Max = dataLast10.length > 0 ? dataLast10[dataLast10.length - 1].attempt : 1;
+
   return (
     <div className="rounded-xl bg-white p-4">
-      <div className="text-center text-xs font-medium text-slate-600">スコアの推移（100点満点）</div>
-      <div className="mt-2 h-[200px] min-h-[200px] w-full">
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => setTab("last10")}
+          className={[
+            "rounded-xl px-4 py-2 text-sm font-medium transition",
+            tab === "last10"
+              ? "bg-blue-500 text-white"
+              : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+          ].join(" ")}
+        >
+          直近10回
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("all")}
+          className={[
+            "rounded-xl px-4 py-2 text-sm font-medium transition",
+            tab === "all"
+              ? "bg-blue-500 text-white"
+              : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+          ].join(" ")}
+        >
+          全期間
+        </button>
+      </div>
+      <div className="mt-3 h-[200px] min-h-[200px] w-full">
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis dataKey="xLabel" tick={{ fontSize: 10, fill: "#64748b" }} />
+            {tab === "last10" ? (
+              <XAxis
+                dataKey="attempt"
+                type="number"
+                domain={[last10Min, last10Max]}
+                tick={{ fontSize: 10, fill: "#64748b" }}
+                allowDecimals={false}
+              />
+            ) : (
+              <XAxis
+                dataKey="attempt"
+                type="number"
+                domain={[1, totalAttempts]}
+                tick={{ fontSize: 10, fill: "#64748b" }}
+                ticks={ticksAll}
+                allowDecimals={false}
+              />
+            )}
             <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "#64748b" }} width={28} />
             <Tooltip
               contentStyle={{ backgroundColor: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px" }}
@@ -132,6 +205,7 @@ function WeeklyReportLineChart({ history }: { history: HistoryItem[] }) {
           </LineChart>
         </ResponsiveContainer>
       </div>
+      <p className="mt-3 text-center text-xs text-slate-600">これまでの診断回数: {totalAttempts}回</p>
     </div>
   );
 }
@@ -706,50 +780,13 @@ export default function Home() {
 
               {(weeklyReportLoading || weeklyReport) && (
                 <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
-                  <h3 className="text-center text-sm font-semibold text-slate-900">週次レポート</h3>
+                  <h3 className="text-center text-sm font-semibold text-slate-900">📈 あなたの成長記録</h3>
                   {weeklyReportLoading ? (
                     <div className="mt-4 text-center text-sm text-slate-600">集計中...</div>
                   ) : weeklyReport && weeklyReport.totalAttempts > 0 ? (
-                    <>
-                      <div className="mt-4">
-                        <WeeklyReportLineChart history={weeklyReport.history} />
-                      </div>
-                      <div className="mt-4 grid grid-cols-2 gap-4">
-                        <div className="rounded-xl bg-white p-4 text-center">
-                          <div className="text-xs text-slate-600">今週の診断回数</div>
-                          <div className="mt-2 text-2xl font-bold text-slate-900">{weeklyReport.thisWeek.count}回</div>
-                        </div>
-                        <div className="rounded-xl bg-white p-4 text-center">
-                          <div className="text-xs text-slate-600">今週の平均スコア</div>
-                          <div className="mt-2 text-2xl font-bold tabular-nums text-blue-600">
-                            {weeklyReport.thisWeek.averageScore}<span className="text-lg font-semibold text-slate-500">/100点</span>
-                          </div>
-                        </div>
-                      </div>
-                      {weeklyReport.lastWeek.count > 0 && (
-                        <div className="mt-4 flex items-center justify-between rounded-xl bg-white px-4 py-3 text-center">
-                          <span className="text-xs text-slate-600">先週との比較</span>
-                          <span
-                            className={`text-sm font-semibold ${
-                              weeklyReport.scoreDiff > 0
-                                ? "text-green-600"
-                                : weeklyReport.scoreDiff < 0
-                                  ? "text-red-600"
-                                  : "text-slate-600"
-                            }`}
-                          >
-                            {weeklyReport.scoreDiff > 0 ? "+" : ""}
-                            {weeklyReport.scoreDiff}点
-                            {weeklyReport.scoreDiff > 0 ? " ↑" : weeklyReport.scoreDiff < 0 ? " ↓" : ""}
-                          </span>
-                        </div>
-                      )}
-                      {weeklyReport.lastWeek.count === 0 && weeklyReport.totalAttempts > 1 && (
-                        <div className="mt-4 rounded-xl bg-white px-4 py-3 text-center text-xs text-slate-600">
-                          先週のデータはありません
-                        </div>
-                      )}
-                    </>
+                    <div className="mt-4">
+                      <GrowthRecordChart history={weeklyReport.history} />
+                    </div>
                   ) : (
                     <div className="mt-4 rounded-xl bg-white px-4 py-6 text-center text-sm text-slate-600">
                       まだ診断データがありません
