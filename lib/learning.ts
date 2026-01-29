@@ -34,7 +34,7 @@ export async function getGoodExamples(): Promise<GoodExample[]> {
   if (!evalData || !Array.isArray(evalData)) return [];
 
   const ids = evalData.map((r) => r.id).filter(Boolean);
-  let feedbackMap: Record<string, string> = {};
+  const feedbackMap: Record<string, string> = {};
   if (ids.length > 0) {
     const { data: fbData } = await supabase
       .from("feedback")
