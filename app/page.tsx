@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 type Age = "18-22" | "23-29" | "30-39" | "40+";
 type Experience = "ほぼなし" | "少し" | "交際経験あり";
@@ -27,16 +28,20 @@ type EvaluateRequest = {
 type EvaluateResponse = {
   evaluation_id?: string;
   persona_type: string;
-  overall_score: number; // 1-5
+  overall_score: number; // 0-100（10カテゴリ合計）
   category_scores: {
-    appearance: number;
+    cleanliness: number;
+    fashion: number;
+    fitness: number;
     meetingActions: number;
-    communication: number;
-    datePower: number;
-    moteMindset: number;
+    dateActions: number;
     lifestyle: number;
+    speakingSkill: number;
+    listeningSkill: number;
+    positiveThinking: number;
+    consistency: number;
   };
-  coach_comment: [string, string, string];
+  coach_comment: [string, string, string, string];
   missions: [string, string, string];
   template: { title: string; content: string };
   is_first_time?: boolean;
@@ -57,33 +62,75 @@ const problemOptions: string[] = [
   "何から始めればいいか分からない",
 ];
 
-function clampScore(n: number) {
+function clampCategoryScore(n: number) {
   if (!Number.isFinite(n)) return 1;
-  return Math.min(5, Math.max(1, Math.round(n)));
+  return Math.min(10, Math.max(1, Math.round(n)));
 }
 
-function Stars({ score }: { score: number }) {
-  const s = clampScore(score);
-  const filled = "★".repeat(s);
-  const empty = "☆".repeat(5 - s);
-  return (
-    <span className="font-semibold tracking-wide text-slate-900" aria-label={`総合スコア ${s} / 5`}>
-      {filled}
-      <span className="text-slate-300">{empty}</span>
-    </span>
-  );
+function clampOverallScore(n: number) {
+  if (!Number.isFinite(n)) return 0;
+  return Math.min(100, Math.max(0, Math.round(n)));
 }
 
 function AxisBar({ label, score }: { label: string; score: number }) {
-  const s = clampScore(score);
+  const s = clampCategoryScore(score);
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-xs text-slate-600">
         <span>{label}</span>
-        <span className="tabular-nums">{s}/5</span>
+        <span className="tabular-nums">{s}/10</span>
       </div>
       <div className="h-2 w-full rounded-full bg-slate-100">
-        <div className="h-2 rounded-full bg-blue-500" style={{ width: `${(s / 5) * 100}%` }} />
+        <div className="h-2 rounded-full bg-blue-500" style={{ width: `${(s / 10) * 100}%` }} />
+      </div>
+    </div>
+  );
+}
+
+const CATEGORY_DISPLAY: { key: keyof EvaluateResponse["category_scores"]; label: string }[] = [
+  { key: "cleanliness", label: "清潔感（髪型・肌・爪・服装）" },
+  { key: "fashion", label: "ファッション（服装・コーデ）" },
+  { key: "fitness", label: "体づくり（筋トレ・運動）" },
+  { key: "meetingActions", label: "出会い行動（機会を増やす）" },
+  { key: "dateActions", label: "デート行動（誘う・計画）" },
+  { key: "lifestyle", label: "生活習慣（睡眠・食事・整理）" },
+  { key: "speakingSkill", label: "話す力（会話をリードする）" },
+  { key: "listeningSkill", label: "聞く力（共感・質問する）" },
+  { key: "positiveThinking", label: "ポジティブ思考（前向きさ）" },
+  { key: "consistency", label: "継続力（習慣化・諦めない）" },
+];
+
+type HistoryItem = { attempt: number; score: number; date: string };
+
+function WeeklyReportLineChart({ history }: { history: HistoryItem[] }) {
+  const data = history.map((h) => ({ ...h, label: `第${h.attempt}回` }));
+  return (
+    <div className="rounded-xl bg-white p-4">
+      <div className="text-center text-xs font-medium text-slate-600">スコアの推移（100点満点）</div>
+      <div className="mt-2 h-[200px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+            <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#64748b" }} />
+            <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "#64748b" }} width={28} />
+            <Tooltip
+              contentStyle={{ backgroundColor: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px" }}
+              formatter={(value: number) => [`${value}点`, "スコア"]}
+              labelFormatter={(
+                _label: string,
+                payload: { payload?: { date?: string; attempt?: number } }[]
+              ) => (payload[0]?.payload?.date ? `${payload[0].payload.date} (第${payload[0].payload.attempt}回)` : "")}
+            />
+            <Line
+              type="monotone"
+              dataKey="score"
+              stroke="#3B82F6"
+              strokeWidth={2}
+              dot={{ r: 4, fill: "#3B82F6", stroke: "#fff", strokeWidth: 1.5 }}
+              activeDot={{ r: 5 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
@@ -130,6 +177,8 @@ export default function Home() {
 
   // 週次レポート
   const [weeklyReport, setWeeklyReport] = useState<{
+    history: { attempt: number; score: number; date: string }[];
+    totalAttempts: number;
     thisWeek: { count: number; averageScore: number };
     lastWeek: { count: number; averageScore: number };
     scoreDiff: number;
@@ -260,13 +309,13 @@ export default function Home() {
           const reportRes = await fetch(`/api/weekly-report?${params}`);
           if (reportRes.ok) {
             const reportData = (await reportRes.json()) as {
+              history: { attempt: number; score: number; date: string }[];
+              totalAttempts: number;
               thisWeek: { count: number; averageScore: number };
               lastWeek: { count: number; averageScore: number };
               scoreDiff: number;
             };
-            if (reportData.thisWeek.count > 0) {
-              setWeeklyReport(reportData);
-            }
+            setWeeklyReport(reportData);
           }
         } catch (e) {
           console.error("[page] Weekly report fetch error:", e);
@@ -560,9 +609,9 @@ export default function Home() {
                   <p className="text-sm text-slate-600">ペルソナタイプ: <span className="font-medium text-slate-900">{result.persona_type}</span></p>
                 </div>
                 <div className="text-right">
-                  <div className="text-xs text-slate-500">総合スコア</div>
-                  <div className="mt-1 text-lg">
-                    <Stars score={result.overall_score} />
+                  <div className="text-xs text-slate-500">合計点</div>
+                  <div className="mt-1 text-2xl font-bold tabular-nums text-slate-900">
+                    {clampOverallScore(result.overall_score)}<span className="text-lg font-semibold text-slate-500">/100点</span>
                   </div>
                 </div>
               </div>
@@ -599,12 +648,9 @@ export default function Home() {
               )}
 
               <div className="mt-5 grid grid-cols-1 gap-3">
-                <AxisBar label="外見磨き（服装・髪型・清潔感）" score={result.category_scores.appearance} />
-                <AxisBar label="出会い行動（機会を増やす努力）" score={result.category_scores.meetingActions} />
-                <AxisBar label="コミュ力（話す・聞く・質問する）" score={result.category_scores.communication} />
-                <AxisBar label="デート力（誘う・計画・実行）" score={result.category_scores.datePower} />
-                <AxisBar label="モテマインド（自信・前向きさ）" score={result.category_scores.moteMindset} />
-                <AxisBar label="生活習慣（睡眠・食事・趣味）" score={result.category_scores.lifestyle} />
+                {CATEGORY_DISPLAY.map(({ key, label }, i) => (
+                  <AxisBar key={key} label={`${i + 1}. ${label}`} score={result.category_scores[key]} />
+                ))}
               </div>
 
               <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -658,13 +704,16 @@ export default function Home() {
                 </pre>
               </div>
 
-              {(weeklyReportLoading || (weeklyReport && weeklyReport.thisWeek.count > 0)) && (
+              {(weeklyReportLoading || weeklyReport) && (
                 <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
                   <h3 className="text-center text-sm font-semibold text-slate-900">週次レポート</h3>
                   {weeklyReportLoading ? (
                     <div className="mt-4 text-center text-sm text-slate-600">集計中...</div>
-                  ) : weeklyReport && weeklyReport.thisWeek.count > 0 ? (
+                  ) : weeklyReport && weeklyReport.totalAttempts > 0 ? (
                     <>
+                      <div className="mt-4">
+                        <WeeklyReportLineChart history={weeklyReport.history} />
+                      </div>
                       <div className="mt-4 grid grid-cols-2 gap-4">
                         <div className="rounded-xl bg-white p-4 text-center">
                           <div className="text-xs text-slate-600">今週の診断回数</div>
@@ -672,7 +721,9 @@ export default function Home() {
                         </div>
                         <div className="rounded-xl bg-white p-4 text-center">
                           <div className="text-xs text-slate-600">今週の平均スコア</div>
-                          <div className="mt-2 text-2xl font-bold text-blue-600">{weeklyReport.thisWeek.averageScore}点</div>
+                          <div className="mt-2 text-2xl font-bold tabular-nums text-blue-600">
+                            {weeklyReport.thisWeek.averageScore}<span className="text-lg font-semibold text-slate-500">/100点</span>
+                          </div>
                         </div>
                       </div>
                       {weeklyReport.lastWeek.count > 0 && (
@@ -693,13 +744,17 @@ export default function Home() {
                           </span>
                         </div>
                       )}
-                      {weeklyReport.lastWeek.count === 0 && (
+                      {weeklyReport.lastWeek.count === 0 && weeklyReport.totalAttempts > 1 && (
                         <div className="mt-4 rounded-xl bg-white px-4 py-3 text-center text-xs text-slate-600">
                           先週のデータはありません
                         </div>
                       )}
                     </>
-                  ) : null}
+                  ) : (
+                    <div className="mt-4 rounded-xl bg-white px-4 py-6 text-center text-sm text-slate-600">
+                      まだ診断データがありません
+                    </div>
+                  )}
                 </div>
               )}
 

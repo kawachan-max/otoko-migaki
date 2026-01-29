@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase";
 
+type HistoryItem = {
+  attempt: number;
+  score: number;
+  date: string;
+};
+
 type WeeklyReportResponse = {
+  history: HistoryItem[];
+  totalAttempts: number;
   thisWeek: {
     count: number;
     averageScore: number;
@@ -62,7 +70,7 @@ export async function GET(req: Request) {
           const result = (row as { result?: unknown }).result;
           if (typeof result === "object" && result !== null && "overall_score" in result) {
             const score = (result as { overall_score?: unknown }).overall_score;
-            if (typeof score === "number" && Number.isFinite(score) && score >= 1 && score <= 5) {
+            if (typeof score === "number" && Number.isFinite(score) && score >= 0 && score <= 100) {
               scores.push(score);
             }
           }
@@ -72,8 +80,7 @@ export async function GET(req: Request) {
       if (scores.length === 0) return 0;
       const sum = scores.reduce((a, b) => a + b, 0);
       const average = sum / scores.length;
-      // 1-5のスコアを20-100のパーセンテージに変換（四捨五入）
-      return Math.round(average * 20);
+      return Math.round(average);
     };
 
     const thisWeekCount = Array.isArray(thisWeekData) ? thisWeekData.length : 0;
@@ -85,6 +92,8 @@ export async function GET(req: Request) {
     const scoreDiff = thisWeekAverage - lastWeekAverage;
 
     const response: WeeklyReportResponse = {
+      history,
+      totalAttempts: history.length,
       thisWeek: {
         count: thisWeekCount,
         averageScore: thisWeekAverage,
