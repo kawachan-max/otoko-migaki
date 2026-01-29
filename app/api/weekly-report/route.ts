@@ -53,7 +53,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "データの取得に失敗しました。" }, { status: 500 });
     }
 
-    function calculateAverageScore(data: unknown[]): number {
+    const calculateAverageScore = (data: unknown[]): number => {
       if (!Array.isArray(data) || data.length === 0) return 0;
 
       const scores: number[] = [];
@@ -74,7 +74,7 @@ export async function GET(req: Request) {
       const average = sum / scores.length;
       // 1-5のスコアを20-100のパーセンテージに変換（四捨五入）
       return Math.round(average * 20);
-    }
+    };
 
     const thisWeekCount = Array.isArray(thisWeekData) ? thisWeekData.length : 0;
     const thisWeekAverage = calculateAverageScore(thisWeekData ?? []);
