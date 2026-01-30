@@ -78,11 +78,11 @@ function AxisBar({ label, score }: { label: string; score: number }) {
   const s = clampCategoryScore(score);
   return (
     <div className="min-w-0 space-y-1">
-      <div className="flex items-center justify-between gap-2 text-sm text-slate-600">
+      <div className="flex items-center justify-between gap-2 text-sm text-slate-600 dark:text-gray-300">
         <span className="min-w-0 truncate">{label}</span>
         <span className="shrink-0 tabular-nums">{s}/10</span>
       </div>
-      <div className="h-2.5 w-full min-w-0 rounded-full bg-slate-100">
+      <div className="h-2.5 w-full min-w-0 rounded-full bg-slate-100 dark:bg-gray-700">
         <div className="h-2.5 rounded-full bg-blue-500" style={{ width: `${(s / 10) * 100}%` }} />
       </div>
     </div>
@@ -139,7 +139,7 @@ function GrowthRecordChart({ history }: { history: HistoryItem[] }) {
   const last10Max = dataLast10.length > 0 ? dataLast10[dataLast10.length - 1].attempt : 1;
 
   return (
-    <div className="min-w-0 overflow-hidden rounded-xl bg-white p-4">
+    <div className="min-w-0 overflow-hidden rounded-xl bg-white p-4 dark:bg-gray-800">
       <div className="flex gap-2">
         <button
           type="button"
@@ -148,7 +148,7 @@ function GrowthRecordChart({ history }: { history: HistoryItem[] }) {
             "min-h-[48px] min-w-0 flex-1 rounded-xl px-4 py-2 text-sm font-medium transition",
             tab === "last10"
               ? "bg-blue-500 text-white"
-              : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+              : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600",
           ].join(" ")}
         >
           直近10回
@@ -160,7 +160,7 @@ function GrowthRecordChart({ history }: { history: HistoryItem[] }) {
             "min-h-[48px] min-w-0 flex-1 rounded-xl px-4 py-2 text-sm font-medium transition",
             tab === "all"
               ? "bg-blue-500 text-white"
-              : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+              : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600",
           ].join(" ")}
         >
           全期間
@@ -207,7 +207,7 @@ function GrowthRecordChart({ history }: { history: HistoryItem[] }) {
           </LineChart>
         </ResponsiveContainer>
       </div>
-      <p className="mt-3 text-center text-sm text-slate-600">これまでの診断回数: {totalAttempts}回</p>
+      <p className="mt-3 text-center text-sm text-slate-600 dark:text-gray-400">これまでの診断回数: {totalAttempts}回</p>
     </div>
   );
 }
@@ -266,6 +266,26 @@ export default function Home() {
   const [formLoadedFromHistory, setFormLoadedFromHistory] = useState(false);
   const [hasHistory, setHasHistory] = useState(false);
   const [isFormExpanded, setIsFormExpanded] = useState(false);
+
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [themeMounted, setThemeMounted] = useState(false);
+  useEffect(() => {
+    const stored = window.localStorage.getItem("theme") as "light" | "dark" | null;
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const resolved = stored ?? (prefersDark ? "dark" : "light");
+    setTheme(resolved);
+    setThemeMounted(true);
+  }, []);
+  useEffect(() => {
+    if (!themeMounted) return;
+    const root = document.documentElement;
+    if (theme === "dark") root.classList.add("dark");
+    else root.classList.remove("dark");
+    window.localStorage.setItem("theme", theme);
+  }, [theme, themeMounted]);
+  function toggleTheme() {
+    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+  }
 
   // 週次レポート
   const [weeklyReport, setWeeklyReport] = useState<{
@@ -482,30 +502,41 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-white">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-white dark:bg-gray-900">
       <div className="mx-auto w-full min-w-0 max-w-2xl px-4 py-8 sm:py-10">
-        <header className="space-y-2">
-          <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl md:text-3xl">
-            男磨きAI
-          </h1>
-          <p className="text-sm text-slate-700 sm:text-base md:text-lg">
-            恋愛経験ゼロから彼女ゲットまで応援！AIが一緒に成長する恋のコーチ
-          </p>
-          <p className="text-sm text-slate-500 sm:text-sm">
-            匿名・無料・1分で診断 & 続けるほど成長が見えます
-          </p>
+        <header className="flex items-start justify-between gap-4">
+          <div className="min-w-0 space-y-2">
+            <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-2xl md:text-3xl">
+              男磨きAI
+            </h1>
+            <p className="text-sm text-slate-700 dark:text-gray-300 sm:text-base md:text-lg">
+              恋愛経験ゼロから彼女ゲットまで応援！AIが一緒に成長する恋のコーチ
+            </p>
+            <p className="text-sm text-slate-500 dark:text-gray-400 sm:text-sm">
+              匿名・無料・1分で診断 & 続けるほど成長が見えます
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="min-h-[48px] min-w-[48px] shrink-0 rounded-xl border border-slate-200 bg-white p-2 text-xl transition hover:bg-slate-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
+            aria-label={theme === "light" ? "ダークモードに切り替え" : "ライトモードに切り替え"}
+            title={theme === "light" ? "ダークモード" : "ライトモード"}
+          >
+            {theme === "light" ? "🌙" : "☀️"}
+          </button>
         </header>
 
         <div className="mt-6 space-y-5 sm:mt-8 sm:space-y-6">
           {(hasHistory && isFormExpanded) || !hasHistory ? (
-            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-gray-600 dark:bg-gray-800 sm:p-5">
               <div className="flex items-center justify-between gap-2">
-                <h2 className="text-sm font-semibold text-slate-900 sm:text-base">診断フォーム（7問）</h2>
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 sm:text-base">診断フォーム（7問）</h2>
                 {hasHistory && (
                   <button
                     type="button"
                     onClick={() => setIsFormExpanded(false)}
-                    className="min-h-[48px] shrink-0 px-2 text-sm font-medium text-slate-500 hover:text-slate-700 hover:underline"
+                    className="min-h-[48px] shrink-0 px-2 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-gray-400 dark:hover:text-gray-200 hover:underline"
                   >
                     条件を閉じる ▲
                   </button>
@@ -514,11 +545,11 @@ export default function Home() {
 
             <div className="mt-4 grid grid-cols-1 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">1. 年齢</label>
+                <label className="text-sm font-medium text-slate-700 dark:text-gray-300">1. 年齢</label>
                 <select
                   value={age}
                   onChange={(e) => setAge(e.target.value as Age | "")}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="min-h-[44px] w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder:text-gray-500"
                 >
                   <option value="">選択してください</option>
                   <option value="18-22">18-22</option>
@@ -529,11 +560,11 @@ export default function Home() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">2. 恋愛経験</label>
+                <label className="text-sm font-medium text-slate-700 dark:text-gray-300">2. 恋愛経験</label>
                 <select
                   value={experience}
                   onChange={(e) => setExperience(e.target.value as Experience | "")}
-                  className="min-h-[44px] w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="min-h-[44px] w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder:text-gray-500"
                 >
                   <option value="">選択してください</option>
                   <option value="ほぼなし">ほぼなし</option>
@@ -544,8 +575,8 @@ export default function Home() {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-slate-700">3. 出会い方（複数選択可）</label>
-                  <span className="text-sm text-slate-500">{meetMethods.length}件選択</span>
+                  <label className="text-sm font-medium text-slate-700 dark:text-gray-300">3. 出会い方（複数選択可）</label>
+                  <span className="text-sm text-slate-500 dark:text-gray-400">{meetMethods.length}件選択</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   {meetMethodOptions.map((m) => {
@@ -554,8 +585,10 @@ export default function Home() {
                       <label
                         key={m}
                         className={[
-                          "flex items-center gap-2 rounded-xl border px-3 py-3 text-sm",
-                          checked ? "border-blue-200 bg-blue-50" : "border-slate-200 bg-white",
+                          "flex min-h-[48px] items-center gap-2 rounded-xl border px-3 py-3 text-sm",
+                          checked
+                            ? "border-blue-200 bg-blue-50 dark:border-blue-600 dark:bg-blue-900/30"
+                            : "border-slate-200 bg-white dark:border-gray-600 dark:bg-gray-700",
                         ].join(" ")}
                       >
                         <input
@@ -567,9 +600,9 @@ export default function Home() {
                               : meetMethods.filter((x) => x !== m);
                             setMeetMethods(next);
                           }}
-                          className="h-4 w-4 accent-blue-500"
+                          className="h-5 w-5 shrink-0 accent-blue-500"
                         />
-                        <span className="text-slate-800">{m}</span>
+                        <span className="text-gray-900 dark:text-gray-100">{m}</span>
                       </label>
                     );
                   })}
@@ -577,11 +610,11 @@ export default function Home() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">4. 目的</label>
+                <label className="text-sm font-medium text-slate-700 dark:text-gray-300">4. 目的</label>
                 <select
                   value={goal}
                   onChange={(e) => setGoal(e.target.value as Goal | "")}
-                  className="min-h-[44px] w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="min-h-[44px] w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder:text-gray-500"
                 >
                   <option value="">選択してください</option>
                   <option value="彼女が欲しい">彼女が欲しい</option>
@@ -592,8 +625,8 @@ export default function Home() {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-slate-700">5. 困りごと（複数選択可）</label>
-                  <span className="text-xs text-slate-500">{problems.length}件選択</span>
+                  <label className="text-sm font-medium text-slate-700 dark:text-gray-300">5. 困りごと（複数選択可）</label>
+                  <span className="text-sm text-slate-500 dark:text-gray-400">{problems.length}件選択</span>
                 </div>
                 <div className="grid grid-cols-1 gap-2">
                   {problemOptions.map((p) => {
@@ -603,7 +636,9 @@ export default function Home() {
                         key={p}
                         className={[
                           "flex min-h-[48px] items-center gap-2 rounded-xl border px-3 py-3 text-sm",
-                          checked ? "border-blue-200 bg-blue-50" : "border-slate-200 bg-white",
+                          checked
+                            ? "border-blue-200 bg-blue-50 dark:border-blue-600 dark:bg-blue-900/30"
+                            : "border-slate-200 bg-white dark:border-gray-600 dark:bg-gray-700",
                         ].join(" ")}
                       >
                         <input
@@ -616,7 +651,7 @@ export default function Home() {
                           }}
                           className="h-5 w-5 shrink-0 accent-blue-500"
                         />
-                        <span className="text-slate-800">{p}</span>
+                        <span className="text-gray-900 dark:text-gray-100">{p}</span>
                       </label>
                     );
                   })}
@@ -624,11 +659,11 @@ export default function Home() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">6. 使える時間</label>
+                <label className="text-sm font-medium text-slate-700 dark:text-gray-300">6. 使える時間</label>
                 <select
                   value={timeBudget}
                   onChange={(e) => setTimeBudget(e.target.value as TimeBudget | "")}
-                  className="min-h-[44px] w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="min-h-[44px] w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder:text-gray-500"
                 >
                   <option value="">選択してください</option>
                   <option value="〜1h">〜1h</option>
@@ -639,11 +674,11 @@ export default function Home() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">7. 地域</label>
+                <label className="text-sm font-medium text-slate-700 dark:text-gray-300">7. 地域</label>
                 <select
                   value={region}
                   onChange={(e) => setRegion(e.target.value as Region | "")}
-                  className="min-h-[44px] w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="min-h-[44px] w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder:text-gray-500"
                 >
                   <option value="">選択してください</option>
                   <option value="都市部">都市部</option>
@@ -654,18 +689,18 @@ export default function Home() {
           </section>
           ) : null}
 
-          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            <h2 className="text-sm font-semibold text-slate-900 sm:text-base">男磨きの行動記録</h2>
-            <p className="mt-1 text-sm text-slate-600">悩み解決や目標達成のために今日頑張ったことは？（改行で複数入力できるよ）</p>
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-gray-600 dark:bg-gray-800 sm:p-5">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 sm:text-base">男磨きの行動記録</h2>
+            <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">悩み解決や目標達成のために今日頑張ったことは？（改行で複数入力できるよ）</p>
             <textarea
               value={actionsText}
               onChange={(e) => setActionsText(e.target.value)}
               placeholder={"例：マッチングアプリでメッセージを送った、筋トレした、新しい服を買った"}
               rows={7}
-              className="mt-3 min-h-[44px] w-full min-w-0 resize-none rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm leading-6 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              className="mt-3 min-h-[44px] w-full min-w-0 resize-none rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm leading-6 text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder:text-gray-500"
             />
-            <p className="mt-2 text-sm text-slate-500">具体的に書くほど、的確なアドバイスができるよ！</p>
-            <div className="mt-2 flex items-center justify-between text-sm text-slate-500">
+            <p className="mt-2 text-sm text-slate-500 dark:text-gray-400">具体的に書くほど、的確なアドバイスができるよ！</p>
+            <div className="mt-2 flex items-center justify-between text-sm text-slate-500 dark:text-gray-400">
               <span>入力数: {actionsToSend.length}個</span>
               <span className="tabular-nums">匿名ID: {anonymousUserId ? anonymousUserId.slice(0, 8) : "..."}</span>
             </div>
@@ -674,8 +709,8 @@ export default function Home() {
               <>
                 <hr className="my-5 border-slate-200" />
                 <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-slate-900">🎁 前回のチャレンジ達成ボーナス</h3>
-                  <p className="text-sm text-slate-600">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">🎁 前回のチャレンジ達成ボーナス</h3>
+                  <p className="text-sm text-slate-600 dark:text-gray-300">
                     前回出したチャレンジのうち、できたものにチェックを入れてください。達成分だけ今回のスコアにボーナス加点されます。
                   </p>
                   <div className="space-y-2">
@@ -685,7 +720,7 @@ export default function Home() {
                       const label = diff === "easy" ? "【簡単】" : diff === "medium" ? "【中級】" : "【挑戦】";
                       const bonus = diff === "easy" ? "+1点" : diff === "medium" ? "+2点" : "+3点";
                       return (
-                        <label key={i} className="flex min-h-[48px] items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+                        <label key={i} className="flex min-h-[48px] items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 dark:border-gray-600 dark:bg-gray-700">
                           <input
                             type="checkbox"
                             checked={challengeBonus[i]}
@@ -698,7 +733,7 @@ export default function Home() {
                             }}
                             className="mt-1 h-5 w-5 shrink-0 accent-blue-500"
                           />
-                          <span className="text-sm text-slate-800">
+                          <span className="text-sm text-gray-900 dark:text-gray-100">
                             {icon} {label} {c.text} → {bonus}
                           </span>
                         </label>
@@ -710,7 +745,7 @@ export default function Home() {
             )}
 
             {error && (
-              <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-200">
                 {error}
               </div>
             )}
@@ -722,7 +757,7 @@ export default function Home() {
               className={[
                 "mt-4 flex min-h-[48px] w-full min-w-0 items-center justify-center gap-2 rounded-2xl px-4 py-4 text-base font-semibold transition",
                 isLoading
-                  ? "cursor-not-allowed bg-slate-200 text-slate-600"
+                  ? "cursor-not-allowed bg-slate-200 text-slate-600 dark:bg-gray-600 dark:text-gray-300"
                   : "bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60",
               ].join(" ")}
             >
@@ -736,7 +771,7 @@ export default function Home() {
             </button>
 
             {!canSubmitByActions && !isLoading && (
-              <p className="mt-2 text-center text-sm text-slate-500">
+              <p className="mt-2 text-center text-sm text-slate-500 dark:text-gray-400">
                 行動記録を入力するか、チャレンジにチェックを入れてください
               </p>
             )}
@@ -745,7 +780,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => setIsFormExpanded(true)}
-                className="mt-3 flex min-h-[48px] w-full items-center justify-center text-center text-sm text-slate-500 hover:text-slate-700 hover:underline"
+                className="mt-3 flex min-h-[48px] w-full items-center justify-center text-center text-sm text-slate-500 hover:text-slate-700 dark:text-gray-400 dark:hover:text-gray-200 hover:underline"
               >
                 条件を変更する ▼
               </button>
@@ -753,19 +788,19 @@ export default function Home() {
           </section>
 
           {result && (
-            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-gray-600 dark:bg-gray-800 sm:p-5">
               <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0 space-y-1">
-                  <h2 className="text-sm font-semibold text-slate-900 sm:text-base">結果</h2>
+                  <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100 sm:text-base">結果</h2>
                   {(result.visit_count ?? 0) >= 2 && (
                     <p className="text-sm font-medium text-blue-600">{result.visit_count}回目の判定です！</p>
                   )}
-                  <p className="text-sm text-slate-600">ペルソナタイプ: <span className="font-medium text-slate-900">{result.persona_type}</span></p>
+                  <p className="text-sm text-slate-600 dark:text-gray-300">ペルソナタイプ: <span className="font-medium text-slate-900 dark:text-gray-100">{result.persona_type}</span></p>
                 </div>
                 <div className="shrink-0 text-left sm:text-right">
-                  <div className="text-sm text-slate-500">合計点</div>
-                  <div className="mt-1 text-xl font-bold tabular-nums text-slate-900 sm:text-2xl">
-                    {clampOverallScore(result.overall_score)}<span className="text-base font-semibold text-slate-500 sm:text-lg">/100点</span>
+                  <div className="text-sm text-slate-500 dark:text-gray-400">合計点</div>
+                  <div className="mt-1 text-xl font-bold tabular-nums text-slate-900 dark:text-gray-100 sm:text-2xl">
+                    {clampOverallScore(result.overall_score)}<span className="text-base font-semibold text-slate-500 dark:text-gray-400 sm:text-lg">/100点</span>
                   </div>
                   {(result.challengeBonus ?? 0) > 0 && (
                     <p className="mt-1 text-sm font-medium text-amber-600">
@@ -783,7 +818,7 @@ export default function Home() {
                     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
                     window.open(tweetUrl, "_blank");
                   }}
-                  className="inline-flex min-h-[48px] items-center gap-2 rounded-lg bg-[#000000] px-6 py-3 text-sm font-medium text-white transition hover:bg-[#1a1a1a]"
+                  className="inline-flex min-h-[48px] items-center gap-2 rounded-lg bg-[#000000] px-6 py-3 text-sm font-medium text-white transition hover:bg-[#1a1a1a] dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
                   aria-label="結果をXでシェア"
                 >
                   <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" aria-hidden="true">
@@ -797,15 +832,15 @@ export default function Home() {
               </div>
 
               {result.growth_comment && (
-                <div className="mt-5 rounded-2xl border border-green-200 bg-green-50 p-4">
-                  <div className="text-sm font-semibold text-green-900">前回からの成長</div>
-                  <p className="mt-2 text-sm text-green-800">{result.growth_comment}</p>
+                <div className="mt-5 rounded-2xl border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/30">
+                  <div className="text-sm font-semibold text-green-900 dark:text-green-100">前回からの成長</div>
+                  <p className="mt-2 text-sm text-green-800 dark:text-green-200">{result.growth_comment}</p>
                   {result.changes_from_last && (result.changes_from_last.improved.length > 0 || result.changes_from_last.needs_work.length > 0) && (
                     <div className="mt-3 space-y-2">
                       {result.changes_from_last.improved.length > 0 && (
                         <div>
-                          <span className="text-sm font-medium text-green-700">改善した点</span>
-                          <ul className="mt-1 list-disc pl-5 text-sm text-green-800">
+                          <span className="text-sm font-medium text-green-700 dark:text-green-300">改善した点</span>
+                          <ul className="mt-1 list-disc pl-5 text-sm text-green-800 dark:text-green-200">
                             {result.changes_from_last.improved.map((s, i) => (
                               <li key={i}>{s}</li>
                             ))}
@@ -814,8 +849,8 @@ export default function Home() {
                       )}
                       {result.changes_from_last.needs_work.length > 0 && (
                         <div>
-                          <span className="text-xs font-medium text-blue-700">まだ課題の点</span>
-                          <ul className="mt-1 list-disc pl-5 text-sm text-blue-800">
+                          <span className="text-xs font-medium text-blue-700 dark:text-blue-300">まだ課題の点</span>
+                          <ul className="mt-1 list-disc pl-5 text-sm text-blue-800 dark:text-blue-200">
                             {result.changes_from_last.needs_work.map((s, i) => (
                               <li key={i}>{s}</li>
                             ))}
@@ -833,9 +868,9 @@ export default function Home() {
                 ))}
               </div>
 
-              <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <div className="text-sm font-semibold text-slate-900">一言コーチング</div>
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+              <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-gray-600 dark:bg-gray-700">
+                <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">一言コーチング</div>
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700 dark:text-gray-300">
                   {result.coach_comment.map((s, i) => (
                     <li key={i}>{s}</li>
                   ))}
@@ -843,7 +878,7 @@ export default function Home() {
               </div>
 
               <div className="mt-5">
-                <div className="text-sm font-semibold text-slate-900">💡 今週のチャレンジ（できそうなものだけでOK）</div>
+                <div className="text-sm font-semibold text-slate-900 dark:text-gray-100">💡 今週のチャレンジ（できそうなものだけでOK）</div>
                 <div className="mt-2 space-y-2">
                   {(result.challenges ?? []).map((c, i) => {
                     const difficulty = c.difficulty ?? (i === 0 ? "easy" : i === 1 ? "medium" : "challenge");
@@ -851,66 +886,66 @@ export default function Home() {
                     const label = difficulty === "easy" ? "【簡単】" : difficulty === "medium" ? "【中級】" : "【挑戦】";
                     const bonus = difficulty === "easy" ? "+1点" : difficulty === "medium" ? "+2点" : "+3点";
                     return (
-                      <div key={i} className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                        <span className="text-sm text-slate-800">
+                      <div key={i} className="rounded-xl border border-slate-200 bg-white px-3 py-3 dark:border-gray-600 dark:bg-gray-700">
+                        <span className="text-sm text-slate-800 dark:text-gray-200">
                           {icon} {label} {c.text} → {bonus}
                         </span>
                       </div>
                     );
                   })}
                 </div>
-                <p className="mt-3 text-sm text-slate-600">
+                <p className="mt-3 text-sm text-slate-600 dark:text-gray-300">
                   挑戦した分だけ次回ボーナス加点されます！
                 </p>
               </div>
 
-              <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 dark:border-gray-600 dark:bg-gray-800">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="text-sm font-semibold text-slate-900">テンプレ：{result.template.title}</div>
-                    <p className="mt-1 text-sm text-slate-500">コピーボタンで貼り付け用テキストをコピーできます。</p>
+                    <div className="text-sm font-semibold text-slate-900 dark:text-gray-100">テンプレ：{result.template.title}</div>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-gray-400">コピーボタンで貼り付け用テキストをコピーできます。</p>
                   </div>
                   <button
                     type="button"
                     onClick={copyTemplate}
-                    className="shrink-0 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+                    className="shrink-0 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-200 dark:hover:bg-blue-900/50"
                   >
                     {copyState === "copied" ? "コピーした" : copyState === "failed" ? "失敗" : "コピー"}
                   </button>
                 </div>
-                <pre className="mt-3 whitespace-pre-wrap rounded-xl bg-slate-50 p-3 text-sm leading-6 text-slate-800">
+                <pre className="mt-3 whitespace-pre-wrap rounded-xl bg-slate-50 p-3 text-sm leading-6 text-gray-900 dark:bg-gray-700 dark:text-gray-100">
                   {result.template.content}
                 </pre>
               </div>
 
               {(weeklyReportLoading || weeklyReport) && (
-                <div className="mt-6 min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm sm:p-5">
-                  <h3 className="text-center text-sm font-semibold text-slate-900">📈 あなたの成長記録</h3>
+                <div className="mt-6 min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm dark:border-gray-600 dark:bg-gray-800 sm:p-5">
+                  <h3 className="text-center text-sm font-semibold text-gray-900 dark:text-gray-100">📈 あなたの成長記録</h3>
                   {weeklyReportLoading ? (
                     <div className="mt-4 space-y-3">
                       <div className="flex gap-2">
-                        <div className="h-10 flex-1 animate-pulse rounded-xl bg-slate-200" />
-                        <div className="h-10 flex-1 animate-pulse rounded-xl bg-slate-200" />
+                        <div className="h-10 flex-1 animate-pulse rounded-xl bg-slate-200 dark:bg-gray-600" />
+                        <div className="h-10 flex-1 animate-pulse rounded-xl bg-slate-200 dark:bg-gray-600" />
                       </div>
-                      <div className="h-[200px] w-full animate-pulse rounded-xl bg-slate-200" />
-                      <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
+                      <div className="h-[200px] w-full animate-pulse rounded-xl bg-slate-200 dark:bg-gray-600" />
+                      <div className="h-4 w-24 animate-pulse rounded bg-slate-200 dark:bg-gray-600" />
                     </div>
                   ) : weeklyReport && weeklyReport.totalAttempts > 0 ? (
                     <div className="mt-4">
                       <GrowthRecordChart history={weeklyReport.history} />
                     </div>
                   ) : (
-                    <div className="mt-4 rounded-xl bg-white px-4 py-6 text-center text-sm text-slate-600">
+                    <div className="mt-4 rounded-xl bg-white px-4 py-6 text-center text-sm text-slate-600 dark:bg-gray-700 dark:text-gray-300">
                       まだ診断データがありません
                     </div>
                   )}
                 </div>
               )}
 
-              <div className="mt-6 border-t border-slate-100 pt-5">
-                <h3 className="text-sm font-semibold text-slate-900">フィードバック</h3>
-                <p className="mt-1 text-sm text-slate-600">あなたの声で、次のアドバイスがもっと的確に！</p>
-                <p className="mt-2 text-sm font-medium text-slate-700">この診断、役に立った？</p>
+              <div className="mt-6 border-t border-slate-100 pt-5 dark:border-gray-700">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">フィードバック</h3>
+                <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">あなたの声で、次のアドバイスがもっと的確に！</p>
+                <p className="mt-2 text-sm font-medium text-slate-700 dark:text-gray-300">この診断、役に立った？</p>
                 <div className="mt-2 flex gap-2">
                   {[1, 2, 3, 4, 5].map((n) => (
                     <button
@@ -920,7 +955,7 @@ export default function Home() {
                       disabled={feedbackSending || feedbackSent}
                       className={[
                         "flex min-h-[48px] min-w-[48px] items-center justify-center rounded-xl border text-lg transition",
-                        feedback >= n ? "border-blue-200 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-400",
+                        feedback >= n ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-200" : "border-slate-200 bg-white text-slate-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400",
                         "hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed",
                       ].join(" ")}
                       aria-label={`フィードバック ${n} / 5`}
@@ -930,7 +965,7 @@ export default function Home() {
                   ))}
                 </div>
                 <div className="mt-4 space-y-1">
-                  <label className="text-sm text-slate-700">
+                  <label className="text-sm text-slate-700 dark:text-gray-300">
                     感想を書いて送信すると、あなた専用へと精度が上がります。（任意）
                   </label>
                   <textarea
@@ -939,9 +974,9 @@ export default function Home() {
                     placeholder="例：デートの誘い方をもっと詳しく教えてほしい"
                     rows={3}
                     disabled={feedbackSending || feedbackSent}
-                    className="mt-1 min-h-[44px] w-full min-w-0 resize-none rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm leading-6 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:opacity-60"
+                    className="mt-1 min-h-[44px] w-full min-w-0 resize-none rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm leading-6 text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder:text-gray-500"
                   />
-                  <p className="text-right text-sm text-slate-500">
+                  <p className="text-right text-sm text-slate-500 dark:text-gray-400">
                     {feedbackComment.length}/{FEEDBACK_COMMENT_MAX}文字
                   </p>
                 </div>
@@ -951,15 +986,15 @@ export default function Home() {
                     onClick={submitFeedback}
                     disabled={feedbackSending || feedback < 1}
                     className={[
-                      "mt-4 flex min-h-[48px] w-full min-w-0 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 transition",
-                      "hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60",
+                      "mt-4 flex min-h-[48px] w-full min-w-0 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 transition dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-200",
+                      "hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-blue-900/50",
                     ].join(" ")}
                   >
                     {feedbackSending ? "送信中..." : "送信する"}
                   </button>
                 )}
                 {feedbackSent && (
-                  <p className="mt-4 text-sm font-medium text-blue-600">
+                  <p className="mt-4 text-sm font-medium text-blue-600 dark:text-blue-400">
                     ありがとう！あなたと仲間のために、次から反映されるよ！
                   </p>
                 )}
@@ -967,7 +1002,7 @@ export default function Home() {
             </section>
           )}
 
-          <footer className="pb-8 pt-4 text-center text-sm text-slate-400">
+          <footer className="pb-8 pt-4 text-center text-sm text-slate-400 dark:text-gray-500">
             <p>※ 医療・法律などの専門助言ではありません。つらい時は信頼できる人や専門家にも相談してね。</p>
           </footer>
         </div>
