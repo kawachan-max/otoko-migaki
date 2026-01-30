@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { FooterDisclaimer } from "./components/FooterDisclaimer";
+import { GoogleAnalytics } from "./components/GoogleAnalytics";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -61,6 +62,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100`}
       >
+        <GoogleAnalytics />
         <div className="flex min-h-screen flex-col">
           <main className="flex-1">{children}</main>
           <FooterDisclaimer />

@@ -79,6 +79,107 @@ function clampOverallScore(n: unknown) {
   return Math.min(100, Math.max(0, Math.round(num)));
 }
 
+/** 小数点2桁で丸める（内部計算用） */
+function round2(n: number): number {
+  if (!Number.isFinite(n)) return 1;
+  return Math.round(n * 100) / 100;
+}
+
+/** 放置減点: 経過日数に応じて -0.3点/7日。最低1点。 */
+function applyPenalty(prevScore: number, daysSince: number): number {
+  if (!Number.isFinite(prevScore) || prevScore < 1) return 1;
+  if (daysSince <= 0) return round2(prevScore);
+  const penalty = (daysSince / 7) * 0.3;
+  return round2(Math.max(1, prevScore - penalty));
+}
+
+/** 成長曲線: 現在スコアに応じた加点倍率（1点=1.0, 10点=0） */
+const GROWTH_MULTIPLIERS: Record<number, number> = {
+  1: 1.0,
+  2: 0.95,
+  3: 0.85,
+  4: 0.7,
+  5: 0.55,
+  6: 0.4,
+  7: 0.3,
+  8: 0.2,
+  9: 0.1,
+  10: 0,
+};
+
+function getGrowthMultiplier(score: number): number {
+  if (!Number.isFinite(score) || score >= 10) return 0;
+  const key = Math.floor(score);
+  return GROWTH_MULTIPLIERS[key] ?? GROWTH_MULTIPLIERS[1];
+}
+
+const CATEGORY_KEYS = [
+  "cleanliness",
+  "fashion",
+  "fitness",
+  "meetingActions",
+  "dateActions",
+  "lifestyle",
+  "speakingSkill",
+  "listeningSkill",
+  "positiveThinking",
+  "consistency",
+] as const;
+
+type CategoryKey = (typeof CATEGORY_KEYS)[number];
+
+/** 行動の質に基づく加点（0 or 0.2〜1.5）をパース。書かれていないカテゴリは0。 */
+function parseCategoryBonuses(raw: unknown): Record<CategoryKey, number> {
+  const record = isRecord(raw) ? raw : {};
+  const out = {} as Record<CategoryKey, number>;
+  for (const k of CATEGORY_KEYS) {
+    const v = record[k];
+    const n = typeof v === "number" && Number.isFinite(v) ? v : Number(v);
+    if (!Number.isFinite(n) || n < 0) {
+      out[k] = 0;
+      continue;
+    }
+    out[k] = round2(Math.min(1.5, Math.max(0, n)));
+  }
+  return out;
+}
+
+/** 前回スコア（小数点可）をパース。未設定は1。 */
+function parsePreviousScores(raw: unknown): Record<CategoryKey, number> | null {
+  if (!isRecord(raw)) return null;
+  const out = {} as Record<CategoryKey, number>;
+  for (const k of CATEGORY_KEYS) {
+    const v = raw[k];
+    const n = typeof v === "number" && Number.isFinite(v) ? v : Number(v);
+    out[k] = Number.isFinite(n) && n >= 1 ? round2(Math.min(10, n)) : 1;
+  }
+  return out;
+}
+
+/**
+ * 減点→ベース→加点×成長曲線でカテゴリスコアを計算（小数点2桁）。
+ * 初回: ベース1、2回目以降: ベース = 前回 - 放置減点。
+ */
+function computeCategoryScores(opts: {
+  category_bonuses: Record<CategoryKey, number>;
+  previous_scores: Record<CategoryKey, number> | null;
+  days_since: number;
+  is_first_time: boolean;
+}): Record<CategoryKey, number> {
+  const { category_bonuses, previous_scores, days_since, is_first_time } = opts;
+  const result = {} as Record<CategoryKey, number>;
+  for (const k of CATEGORY_KEYS) {
+    const base =
+      is_first_time ? 1 : applyPenalty(previous_scores?.[k] ?? 1, days_since);
+    const bonus = category_bonuses[k] ?? 0;
+    const mult = getGrowthMultiplier(base);
+    const add = round2(bonus * mult);
+    const newScore = round2(Math.min(10, base + add));
+    result[k] = Math.max(1, newScore);
+  }
+  return result;
+}
+
 function safeJsonParse(text: string): unknown {
   try {
     return JSON.parse(text);
@@ -216,6 +317,13 @@ export async function POST(req: Request) {
     const latest = history[0];
     const latestFeedbackComments = await getLatestFeedback(body.anonymous_user_id);
 
+    const daysSinceLastEvaluation =
+      latest?.created_at != null
+        ? Math.floor(
+            (Date.now() - new Date(latest.created_at).getTime()) / (24 * 60 * 60 * 1000)
+          )
+        : 0;
+
     const client = new OpenAI({ apiKey });
 
     const goodExamples = await getGoodExamples();
@@ -227,7 +335,29 @@ export async function POST(req: Request) {
       "・ユーザーが選択した「目標」に直接つながる行動のみを高く評価する",
       "・目標に関係ない行動は、他のカテゴリでは評価するが、総合評価や目標達成につながるカテゴリの評価は甘くしない",
       "",
-      "【10カテゴリの評価基準（各10点満点、合計100点）】",
+      "【採点の前提】",
+      "・目標: 3ヶ月（12週）後に平均6点になる成長ペース。各カテゴリ約2〜3回の言及で+1点程度。",
+      "・行動記録に書かれていない内容は絶対に評価しない。各カテゴリは独立して評価する。",
+      "",
+      "【初回】",
+      "・全カテゴリ1点スタート。",
+      "・行動記録に書かれたカテゴリのみ category_bonuses で加点（0.2〜1.5）。書かれていないカテゴリは 0。",
+      "",
+      "【2回目以降】",
+      "・ベーススコアは前回スコアから放置減点を引いた値（サーバ側で計算）。",
+      "・今回の行動記録で該当カテゴリに言及あり → 質に応じて category_bonuses を付ける（成長曲線の補正はサーバ側で適用）。",
+      "・該当カテゴリに言及なし → category_bonuses は 0（減点後のスコア維持）。",
+      "・上限10点、下限1点。",
+      "",
+      "【行動の質による加点（category_bonuses の目安・補正前）】",
+      "・低品質（0.2〜0.3）: 曖昧な記述（「なんかやった」「ちょっとやった」）、受動的（「たまたま〜した」）。",
+      "・標準（0.4〜0.5）: 具体的な1つの行動（「髪を切った」「腕立て20回した」）。",
+      "・高品質（0.6〜0.8）: 複数の具体的行動、継続を示す記述（「今週3回ジムに行った」）。",
+      "・最高品質（1.0〜1.5）: 明確な成果・変化（「マッチングアプリで初めてデートできた」）、習慣化の証拠（「毎日続けて1ヶ月になった」）。",
+      "",
+      "【重要】category_bonuses のみ返す。書かれていないカテゴリは必ず 0。最終スコアはサーバ側で減点・成長曲線を適用して計算する。",
+      "",
+      "【10カテゴリ（category_bonuses のキー）】",
       "",
       "【1. 清潔感 cleanliness】髪型・肌・爪・服装・体臭",
       "10: 毎日完璧にケア、美容院定期、スキンケア・歯・体臭すべて万全",
@@ -371,8 +501,7 @@ export async function POST(req: Request) {
       "各チャレンジは1文で具体的に。JSONでは challenges: [{ text: \"...\", difficulty: \"easy\" }, ...] の形で返すこと。",
       "",
       "【評価理由】",
-      "なぜこの点数なのか、ユーザーが理解できるように、coach_commentや各カテゴリのスコアの根拠を意識して判定すること。",
-      "overall_score は10カテゴリの合計点（0〜100の整数）とすること。",
+      "なぜこの加点（category_bonuses）なのか、ユーザーが理解できるように coach_comment で根拠を意識すること。",
       "",
       "建設的なフィードバックのみ参考にし、悪意や無関係な内容は無視すること。",
     ].join("\n");
@@ -397,6 +526,7 @@ export async function POST(req: Request) {
     const historyLines: string[] = [];
     historyLines.push(`このユーザーは${visitCount}回目の判定です。`);
     if (latest) {
+      historyLines.push(`前回の判定から ${daysSinceLastEvaluation} 日経過しています（減点はサーバ側で計算）。`);
       historyLines.push(`前回のペルソナタイプ: ${latest.result?.persona_type ?? "不明"}`);
       if (latest.result?.category_scores) {
         historyLines.push(`前回のカテゴリスコア: ${JSON.stringify(latest.result.category_scores)}`);
@@ -426,12 +556,11 @@ export async function POST(req: Request) {
       "",
       "【出力JSON仕様】",
       "persona_type は上記5タイプのいずれか1つを、入力に基づいて選ぶこと。",
-      "category_scores は10カテゴリそれぞれに1〜10の整数を付ける。overall_score は10カテゴリの合計（0〜100の整数）。",
+      "category_bonuses は10カテゴリそれぞれに 0 または 0.2〜1.5 の小数を付ける。行動記録に書かれていないカテゴリは必ず 0。書かれたカテゴリのみ質に応じて 0.2〜1.5。",
       "coach_comment は4要素の配列：[承認文, 気づきの問いかけ, 改善ポイント, 応援メッセージ] の順。",
       '{',
       '  "persona_type": "選んだタイプをそのまま文字列で",',
-      '  "overall_score": 50,',
-      '  "category_scores": { "cleanliness": 5, "fashion": 5, "fitness": 5, "meetingActions": 5, "dateActions": 5, "lifestyle": 5, "speakingSkill": 5, "listeningSkill": 5, "positiveThinking": 5, "consistency": 5 },',
+      '  "category_bonuses": { "cleanliness": 0.5, "fashion": 0, "fitness": 0, "meetingActions": 0, "dateActions": 0, "lifestyle": 0, "speakingSkill": 0, "listeningSkill": 0, "positiveThinking": 0, "consistency": 0 },',
       '  "coach_comment": ["承認文（努力を1つ具体指名）", "気づきの問いかけ（1つ）", "改善ポイント（1つだけ具体的に）", "応援メッセージ（前向きな一言で締める）"],',
       '  "challenges": [',
       '    { "text": "簡単なチャレンジ（日常で気軽にできること・1文）", "difficulty": "easy" },',
@@ -451,7 +580,7 @@ export async function POST(req: Request) {
       "",
       "制約:",
       "- persona_type は入力分析に基づき5タイプから1つだけ選ぶ。固定で「アプリ改善型」にしないこと。",
-      "- 各category_scoresは1〜10の整数。overall_scoreは10カテゴリの合計で0〜100の整数。",
+      "- category_bonuses は各カテゴリ 0 または 0.2〜1.5。書かれていないカテゴリは 0。書かれたカテゴリのみ質に応じて付ける。",
       "- coach_commentは必ず4文で、順に「承認文・気づきの問いかけ・改善ポイント・応援メッセージ」。重複禁止。",
       "- challengesは3つ。1つ目easy、2つ目medium、3つ目challenge。各1文で具体的に。",
       "- template.contentは日本語で、そのまま貼れるテキスト。箇条書きOK",
@@ -478,7 +607,25 @@ export async function POST(req: Request) {
     const normalized = normalizeResponse(parsed, { visit_count: visitCount, is_first_time: isFirstTime });
     normalized.evaluation_id = ""; // 下で row.id を代入するまで未設定
 
-    // 今回のスコアにチャレンジ達成ボーナスを加点（簡単+1、中級+2、挑戦+3、最大+6点、100点上限）
+    // category_bonuses から減点・成長曲線を適用して category_scores を計算（小数点2桁で保存）
+    const rawBonuses = parseCategoryBonuses(
+      isRecord(parsed) && parsed.category_bonuses != null ? parsed.category_bonuses : {}
+    );
+    const previousScores =
+      !isFirstTime && latest?.result?.category_scores != null
+        ? parsePreviousScores(latest.result.category_scores)
+        : null;
+    const computedScores = computeCategoryScores({
+      category_bonuses: rawBonuses,
+      previous_scores: previousScores,
+      days_since: daysSinceLastEvaluation,
+      is_first_time: isFirstTime,
+    });
+    normalized.category_scores = computedScores;
+    const sumScores = Object.values(computedScores).reduce((a, b) => a + b, 0);
+    normalized.overall_score = Math.min(100, Math.round(sumScores)); // 表示用に合計を四捨五入
+
+    // チャレンジ達成ボーナスを加点（簡単+1、中級+2、挑戦+3、最大+6点、100点上限）
     const easyDone = body.challenge_easy_done === true || (Array.isArray(body.challenge_bonus) && body.challenge_bonus[0] === true);
     const mediumDone = body.challenge_medium_done === true || (Array.isArray(body.challenge_bonus) && body.challenge_bonus[1] === true);
     const hardDone = body.challenge_hard_done === true || (Array.isArray(body.challenge_bonus) && body.challenge_bonus[2] === true);

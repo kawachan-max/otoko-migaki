@@ -1032,7 +1032,7 @@ export default function Home() {
 
               <div className="mt-5 grid grid-cols-1 gap-3">
                 {CATEGORY_DISPLAY.map(({ key, label }, i) => (
-                  <AxisBar key={key} label={`${i + 1}. ${label}`} score={result.category_scores[key]} />
+                  <AxisBar key={key} label={`${i + 1}. ${label}`} score={Math.round(result.category_scores[key])} />
                 ))}
               </div>
 
