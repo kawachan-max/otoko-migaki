@@ -287,6 +287,24 @@ export default function Home() {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
   }
 
+  /** 新しく診断する: 結果の「今週のチャレンジ」を前回チャレンジに反映し、行動記録・チェックをクリアして結果を非表示にする */
+  function handleNewDiagnosis() {
+    if (result?.challenges?.length === 3) {
+      setLastResult({
+        challenges: result.challenges.map((c) => ({ text: c.text, difficulty: c.difficulty ?? "easy" })),
+      });
+    }
+    setChallengeBonus([false, false, false]);
+    setActionsText("");
+    setResult(null);
+    setError(null);
+    setCopyState("idle");
+    setFeedback(0);
+    setFeedbackComment("");
+    setFeedbackSent(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   // 週次レポート
   const [weeklyReport, setWeeklyReport] = useState<{
     history: { attempt: number; score: number; date: string }[];
@@ -519,10 +537,10 @@ export default function Home() {
           <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
-              onClick={() => window.location.reload()}
+              onClick={handleNewDiagnosis}
               className="flex min-h-[48px] min-w-[48px] items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-xl transition hover:bg-slate-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
-              aria-label="ページを再読み込み"
-              title="新しく診断する（再読み込み）"
+              aria-label="新しく診断する"
+              title="新しく診断する"
             >
               🔄
             </button>
@@ -1027,10 +1045,7 @@ export default function Home() {
                 <div className="mt-6 border-t border-slate-100 pt-5 dark:border-gray-700">
                   <button
                     type="button"
-                    onClick={() => {
-                      setResult(null);
-                      window.scrollTo({ top: 0, behavior: "smooth" });
-                    }}
+                    onClick={handleNewDiagnosis}
                     className="flex min-h-[48px] w-full min-w-0 items-center justify-center gap-2 rounded-xl border-2 border-blue-500 bg-transparent px-4 py-3 text-sm font-semibold text-blue-600 transition hover:bg-blue-50 dark:border-blue-500 dark:text-blue-400 dark:hover:bg-blue-900/30"
                   >
                     🔄 新しく診断する
