@@ -1105,25 +1105,39 @@ export default function Home() {
 
               {(weeklyReportLoading || weeklyReport) && (
                 <div className="mt-6 min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm dark:border-gray-600 dark:bg-gray-800 sm:p-5">
-                  <h3 className="text-center text-sm font-semibold text-gray-900 dark:text-gray-100">📈 あなたの成長記録</h3>
-                  {weeklyReportLoading ? (
-                    <div className="mt-4 space-y-3">
-                      <div className="flex gap-2">
-                        <div className="h-10 flex-1 animate-pulse rounded-xl bg-slate-200 dark:bg-gray-600" />
-                        <div className="h-10 flex-1 animate-pulse rounded-xl bg-slate-200 dark:bg-gray-600" />
+                  <button
+                    type="button"
+                    onClick={() => setResultGrowthOpen((o) => !o)}
+                    className="flex w-full cursor-pointer items-center justify-between gap-2 text-left text-sm font-semibold text-gray-900 transition hover:text-slate-700 dark:text-gray-100 dark:hover:text-gray-300"
+                    aria-expanded={resultGrowthOpen}
+                  >
+                    <span>{resultGrowthOpen ? "📈 成長記録を閉じる" : "📈 成長記録を見る"}</span>
+                    <span aria-hidden>{resultGrowthOpen ? "▲" : "▼"}</span>
+                  </button>
+                  <div
+                    className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${resultGrowthOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+                  >
+                    <div className="overflow-hidden">
+                      <div className="mt-4">
+                        {weeklyReportLoading ? (
+                          <div className="space-y-3">
+                            <div className="flex gap-2">
+                              <div className="h-10 flex-1 animate-pulse rounded-xl bg-slate-200 dark:bg-gray-600" />
+                              <div className="h-10 flex-1 animate-pulse rounded-xl bg-slate-200 dark:bg-gray-600" />
+                            </div>
+                            <div className="h-[200px] w-full animate-pulse rounded-xl bg-slate-200 dark:bg-gray-600" />
+                            <div className="h-4 w-24 animate-pulse rounded bg-slate-200 dark:bg-gray-600" />
+                          </div>
+                        ) : weeklyReport && weeklyReport.totalAttempts > 0 ? (
+                          <GrowthRecordChart history={weeklyReport.history} />
+                        ) : (
+                          <div className="rounded-xl bg-white px-4 py-6 text-center text-sm text-slate-600 dark:bg-gray-700 dark:text-gray-300">
+                            まだ診断データがありません
+                          </div>
+                        )}
                       </div>
-                      <div className="h-[200px] w-full animate-pulse rounded-xl bg-slate-200 dark:bg-gray-600" />
-                      <div className="h-4 w-24 animate-pulse rounded bg-slate-200 dark:bg-gray-600" />
                     </div>
-                  ) : weeklyReport && weeklyReport.totalAttempts > 0 ? (
-                    <div className="mt-4">
-                      <GrowthRecordChart history={weeklyReport.history} />
-                    </div>
-                  ) : (
-                    <div className="mt-4 rounded-xl bg-white px-4 py-6 text-center text-sm text-slate-600 dark:bg-gray-700 dark:text-gray-300">
-                      まだ診断データがありません
-                    </div>
-                  )}
+                  </div>
                 </div>
               )}
 
