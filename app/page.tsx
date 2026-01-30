@@ -267,17 +267,13 @@ export default function Home() {
   const [hasHistory, setHasHistory] = useState(false);
   const [isFormExpanded, setIsFormExpanded] = useState(false);
 
-  /** ランディングの折りたたみ: null=未判定、true=展開、false=閉じる。診断1回以上完了なら閉じる */
+  /** ランディングの折りたたみ: 前回チャレンジデータが存在する = 診断済み = 閉じる */
   const [isLandingOpen, setIsLandingOpen] = useState<boolean | null>(null);
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const diagnosed = window.localStorage.getItem("otoko-migaki-diagnosed") === "true";
-    console.log("[landing] diagnosed:", window.localStorage.getItem("otoko-migaki-diagnosed"), "→ isLandingOpen:", !diagnosed);
-    setIsLandingOpen(!diagnosed);
+    const hasChallenges = window.localStorage.getItem("otoko-migaki-has-challenges") === "true";
+    setIsLandingOpen(!hasChallenges);
   }, []);
-  useEffect(() => {
-    console.log("[landing] isLandingOpen:", isLandingOpen);
-  }, [isLandingOpen]);
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [themeMounted, setThemeMounted] = useState(false);
@@ -353,6 +349,8 @@ export default function Home() {
         setHasHistory(typeof a === "object" && a !== null);
         if (data?.lastResult?.challenges?.length === 3) {
           setLastResult({ challenges: data.lastResult.challenges });
+          if (typeof window !== "undefined") window.localStorage.setItem("otoko-migaki-has-challenges", "true");
+          setIsLandingOpen(false);
         }
         if (typeof a === "object" && a !== null) {
           const ageVal = a.age;
@@ -456,10 +454,7 @@ export default function Home() {
       }
 
       setResult(data as EvaluateResponse);
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem("otoko-migaki-diagnosed", "true");
-        console.log("[landing] 診断完了 → otoko-migaki-diagnosed を保存:", window.localStorage.getItem("otoko-migaki-diagnosed"));
-      }
+      if (typeof window !== "undefined") window.localStorage.setItem("otoko-migaki-has-challenges", "true");
 
       // 週次レポートを取得
       if (anonymousUserId) {
