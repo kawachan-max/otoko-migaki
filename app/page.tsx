@@ -720,11 +720,18 @@ export default function Home() {
               onClick={onSubmit}
               disabled={isLoading || !canSubmitByActions}
               className={[
-                "mt-4 flex min-h-[48px] w-full min-w-0 items-center justify-center rounded-2xl bg-blue-500 px-4 py-4 text-base font-semibold text-white shadow-sm transition",
-                "hover:bg-blue-600 active:bg-blue-700",
-                "disabled:cursor-not-allowed disabled:opacity-60",
+                "mt-4 flex min-h-[48px] w-full min-w-0 items-center justify-center gap-2 rounded-2xl px-4 py-4 text-base font-semibold transition",
+                isLoading
+                  ? "cursor-not-allowed bg-slate-200 text-slate-600"
+                  : "bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60",
               ].join(" ")}
             >
+              {isLoading && (
+                <span
+                  className="h-5 w-5 shrink-0 rounded-full border-2 border-blue-500 border-t-transparent animate-spin"
+                  aria-hidden
+                />
+              )}
               {isLoading ? "診断中..." : "診断する"}
             </button>
 
@@ -880,7 +887,14 @@ export default function Home() {
                 <div className="mt-6 min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm sm:p-5">
                   <h3 className="text-center text-sm font-semibold text-slate-900">📈 あなたの成長記録</h3>
                   {weeklyReportLoading ? (
-                    <div className="mt-4 text-center text-sm text-slate-600">集計中...</div>
+                    <div className="mt-4 space-y-3">
+                      <div className="flex gap-2">
+                        <div className="h-10 flex-1 animate-pulse rounded-xl bg-slate-200" />
+                        <div className="h-10 flex-1 animate-pulse rounded-xl bg-slate-200" />
+                      </div>
+                      <div className="h-[200px] w-full animate-pulse rounded-xl bg-slate-200" />
+                      <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
+                    </div>
                   ) : weeklyReport && weeklyReport.totalAttempts > 0 ? (
                     <div className="mt-4">
                       <GrowthRecordChart history={weeklyReport.history} />
