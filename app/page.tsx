@@ -267,11 +267,11 @@ export default function Home() {
   const [hasHistory, setHasHistory] = useState(false);
   const [isFormExpanded, setIsFormExpanded] = useState(false);
 
-  /** ランディングの折りたたみ: 診断を1回も完了していない→展開、1回以上完了→閉じる */
-  const [landingExpanded, setLandingExpanded] = useState(true);
+  /** ランディングの折りたたみ: null=未判定、true=展開、false=閉じる。診断1回以上完了なら閉じる */
+  const [isLandingOpen, setIsLandingOpen] = useState<boolean | null>(null);
   useEffect(() => {
     const diagnosed = typeof window !== "undefined" && window.localStorage.getItem("otoko-migaki-diagnosed") === "true";
-    setLandingExpanded(!diagnosed);
+    setIsLandingOpen(!diagnosed);
   }, []);
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
@@ -558,15 +558,15 @@ export default function Home() {
         <div className="py-2 text-center">
           <button
             type="button"
-            onClick={() => setLandingExpanded((prev) => !prev)}
+            onClick={() => setIsLandingOpen((prev: boolean | null) => (prev === null ? true : !prev))}
             className="cursor-pointer text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-            aria-expanded={landingExpanded}
+            aria-expanded={isLandingOpen === true}
           >
-            {landingExpanded ? "▲ 閉じる" : "▼ サービス説明を見る"}
+            {isLandingOpen === null ? "読み込み中..." : isLandingOpen ? "▲ 閉じる" : "▼ サービス説明を見る"}
           </button>
         </div>
 
-        {landingExpanded && (
+        {isLandingOpen === true && (
           <>
         {/* ヒーローセクション */}
         <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 px-6 py-16 text-white shadow-xl dark:from-blue-700 dark:via-blue-800 dark:to-indigo-900 sm:px-10 sm:py-20">
