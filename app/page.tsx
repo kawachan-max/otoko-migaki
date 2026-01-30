@@ -296,7 +296,12 @@ export default function Home() {
   }
 
   function scrollToDiagnosisForm() {
-    document.getElementById("diagnosis-form")?.scrollIntoView({ behavior: "smooth" });
+    const el = document.getElementById("main-title");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      document.getElementById("diagnosis-form")?.scrollIntoView({ behavior: "smooth" });
+    }
   }
 
   /** 新しく診断する: 結果の「今週のチャレンジ」を前回チャレンジに反映し、行動記録・チェックをクリアして結果を非表示にする */
@@ -649,7 +654,7 @@ export default function Home() {
         )}
 
         {/* ヘッダー（診断フォームのすぐ上） */}
-        <header className="flex items-start justify-between gap-4 pt-4">
+        <header id="main-title" className="scroll-mt-4 flex items-start justify-between gap-4 pt-4">
           <div className="min-w-0 space-y-2">
             <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-2xl md:text-3xl">
               男磨きAI
