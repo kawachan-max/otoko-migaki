@@ -77,13 +77,13 @@ function clampOverallScore(n: number) {
 function AxisBar({ label, score }: { label: string; score: number }) {
   const s = clampCategoryScore(score);
   return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between text-xs text-slate-600">
-        <span>{label}</span>
-        <span className="tabular-nums">{s}/10</span>
+    <div className="min-w-0 space-y-1">
+      <div className="flex items-center justify-between gap-2 text-sm text-slate-600">
+        <span className="min-w-0 truncate">{label}</span>
+        <span className="shrink-0 tabular-nums">{s}/10</span>
       </div>
-      <div className="h-2 w-full rounded-full bg-slate-100">
-        <div className="h-2 rounded-full bg-blue-500" style={{ width: `${(s / 10) * 100}%` }} />
+      <div className="h-2.5 w-full min-w-0 rounded-full bg-slate-100">
+        <div className="h-2.5 rounded-full bg-blue-500" style={{ width: `${(s / 10) * 100}%` }} />
       </div>
     </div>
   );
@@ -139,13 +139,13 @@ function GrowthRecordChart({ history }: { history: HistoryItem[] }) {
   const last10Max = dataLast10.length > 0 ? dataLast10[dataLast10.length - 1].attempt : 1;
 
   return (
-    <div className="rounded-xl bg-white p-4">
+    <div className="min-w-0 overflow-hidden rounded-xl bg-white p-4">
       <div className="flex gap-2">
         <button
           type="button"
           onClick={() => setTab("last10")}
           className={[
-            "rounded-xl px-4 py-2 text-sm font-medium transition",
+            "min-h-[48px] min-w-0 flex-1 rounded-xl px-4 py-2 text-sm font-medium transition",
             tab === "last10"
               ? "bg-blue-500 text-white"
               : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
@@ -157,7 +157,7 @@ function GrowthRecordChart({ history }: { history: HistoryItem[] }) {
           type="button"
           onClick={() => setTab("all")}
           className={[
-            "rounded-xl px-4 py-2 text-sm font-medium transition",
+            "min-h-[48px] min-w-0 flex-1 rounded-xl px-4 py-2 text-sm font-medium transition",
             tab === "all"
               ? "bg-blue-500 text-white"
               : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
@@ -166,7 +166,7 @@ function GrowthRecordChart({ history }: { history: HistoryItem[] }) {
           全期間
         </button>
       </div>
-      <div className="mt-3 h-[200px] min-h-[200px] w-full">
+      <div className="mt-3 h-[200px] min-h-[200px] w-full min-w-0 overflow-hidden">
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -207,7 +207,7 @@ function GrowthRecordChart({ history }: { history: HistoryItem[] }) {
           </LineChart>
         </ResponsiveContainer>
       </div>
-      <p className="mt-3 text-center text-xs text-slate-600">これまでの診断回数: {totalAttempts}回</p>
+      <p className="mt-3 text-center text-sm text-slate-600">これまでの診断回数: {totalAttempts}回</p>
     </div>
   );
 }
@@ -482,30 +482,30 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="mx-auto w-full max-w-2xl px-4 py-10">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-white">
+      <div className="mx-auto w-full min-w-0 max-w-2xl px-4 py-8 sm:py-10">
         <header className="space-y-2">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl md:text-3xl">
             男磨きAI
           </h1>
-          <p className="text-base text-slate-700 sm:text-lg">
+          <p className="text-sm text-slate-700 sm:text-base md:text-lg">
             恋愛経験ゼロから彼女ゲットまで応援！AIが一緒に成長する恋のコーチ
           </p>
-          <p className="text-xs text-slate-500 sm:text-sm">
+          <p className="text-sm text-slate-500 sm:text-sm">
             匿名・無料・1分で診断 & 続けるほど成長が見えます
           </p>
         </header>
 
-        <div className="mt-8 space-y-6">
+        <div className="mt-6 space-y-5 sm:mt-8 sm:space-y-6">
           {(hasHistory && isFormExpanded) || !hasHistory ? (
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
               <div className="flex items-center justify-between gap-2">
-                <h2 className="text-base font-semibold text-slate-900">診断フォーム（7問）</h2>
+                <h2 className="text-sm font-semibold text-slate-900 sm:text-base">診断フォーム（7問）</h2>
                 {hasHistory && (
                   <button
                     type="button"
                     onClick={() => setIsFormExpanded(false)}
-                    className="shrink-0 text-sm font-medium text-slate-500 hover:text-slate-700 hover:underline"
+                    className="min-h-[48px] shrink-0 px-2 text-sm font-medium text-slate-500 hover:text-slate-700 hover:underline"
                   >
                     条件を閉じる ▲
                   </button>
@@ -533,7 +533,7 @@ export default function Home() {
                 <select
                   value={experience}
                   onChange={(e) => setExperience(e.target.value as Experience | "")}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="min-h-[44px] w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="">選択してください</option>
                   <option value="ほぼなし">ほぼなし</option>
@@ -545,7 +545,7 @@ export default function Home() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-medium text-slate-700">3. 出会い方（複数選択可）</label>
-                  <span className="text-xs text-slate-500">{meetMethods.length}件選択</span>
+                  <span className="text-sm text-slate-500">{meetMethods.length}件選択</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   {meetMethodOptions.map((m) => {
@@ -581,7 +581,7 @@ export default function Home() {
                 <select
                   value={goal}
                   onChange={(e) => setGoal(e.target.value as Goal | "")}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="min-h-[44px] w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="">選択してください</option>
                   <option value="彼女が欲しい">彼女が欲しい</option>
@@ -602,7 +602,7 @@ export default function Home() {
                       <label
                         key={p}
                         className={[
-                          "flex items-center gap-2 rounded-xl border px-3 py-3 text-sm",
+                          "flex min-h-[48px] items-center gap-2 rounded-xl border px-3 py-3 text-sm",
                           checked ? "border-blue-200 bg-blue-50" : "border-slate-200 bg-white",
                         ].join(" ")}
                       >
@@ -614,7 +614,7 @@ export default function Home() {
                               e.target.checked ? [...prev, p] : prev.filter((x) => x !== p)
                             );
                           }}
-                          className="h-4 w-4 accent-blue-500"
+                          className="h-5 w-5 shrink-0 accent-blue-500"
                         />
                         <span className="text-slate-800">{p}</span>
                       </label>
@@ -628,7 +628,7 @@ export default function Home() {
                 <select
                   value={timeBudget}
                   onChange={(e) => setTimeBudget(e.target.value as TimeBudget | "")}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="min-h-[44px] w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="">選択してください</option>
                   <option value="〜1h">〜1h</option>
@@ -643,7 +643,7 @@ export default function Home() {
                 <select
                   value={region}
                   onChange={(e) => setRegion(e.target.value as Region | "")}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="min-h-[44px] w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="">選択してください</option>
                   <option value="都市部">都市部</option>
@@ -654,18 +654,18 @@ export default function Home() {
           </section>
           ) : null}
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-base font-semibold text-slate-900">男磨きの行動記録</h2>
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            <h2 className="text-sm font-semibold text-slate-900 sm:text-base">男磨きの行動記録</h2>
             <p className="mt-1 text-sm text-slate-600">悩み解決や目標達成のために今日頑張ったことは？（改行で複数入力できるよ）</p>
             <textarea
               value={actionsText}
               onChange={(e) => setActionsText(e.target.value)}
               placeholder={"例：マッチングアプリでメッセージを送った、筋トレした、新しい服を買った"}
               rows={7}
-              className="mt-3 w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm leading-6 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              className="mt-3 min-h-[44px] w-full min-w-0 resize-none rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm leading-6 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
-            <p className="mt-2 text-xs text-slate-500">具体的に書くほど、的確なアドバイスができるよ！</p>
-            <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
+            <p className="mt-2 text-sm text-slate-500">具体的に書くほど、的確なアドバイスができるよ！</p>
+            <div className="mt-2 flex items-center justify-between text-sm text-slate-500">
               <span>入力数: {actionsToSend.length}個</span>
               <span className="tabular-nums">匿名ID: {anonymousUserId ? anonymousUserId.slice(0, 8) : "..."}</span>
             </div>
@@ -675,7 +675,7 @@ export default function Home() {
                 <hr className="my-5 border-slate-200" />
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-slate-900">🎁 前回のチャレンジ達成ボーナス</h3>
-                  <p className="text-xs text-slate-600">
+                  <p className="text-sm text-slate-600">
                     前回出したチャレンジのうち、できたものにチェックを入れてください。達成分だけ今回のスコアにボーナス加点されます。
                   </p>
                   <div className="space-y-2">
@@ -685,7 +685,7 @@ export default function Home() {
                       const label = diff === "easy" ? "【簡単】" : diff === "medium" ? "【中級】" : "【挑戦】";
                       const bonus = diff === "easy" ? "+1点" : diff === "medium" ? "+2点" : "+3点";
                       return (
-                        <label key={i} className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                        <label key={i} className="flex min-h-[48px] items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
                           <input
                             type="checkbox"
                             checked={challengeBonus[i]}
@@ -696,7 +696,7 @@ export default function Home() {
                                 return next;
                               });
                             }}
-                            className="mt-1 h-4 w-4 accent-blue-500"
+                            className="mt-1 h-5 w-5 shrink-0 accent-blue-500"
                           />
                           <span className="text-sm text-slate-800">
                             {icon} {label} {c.text} → {bonus}
@@ -720,7 +720,7 @@ export default function Home() {
               onClick={onSubmit}
               disabled={isLoading || !canSubmitByActions}
               className={[
-                "mt-4 w-full rounded-2xl bg-blue-500 px-4 py-4 text-base font-semibold text-white shadow-sm transition",
+                "mt-4 flex min-h-[48px] w-full min-w-0 items-center justify-center rounded-2xl bg-blue-500 px-4 py-4 text-base font-semibold text-white shadow-sm transition",
                 "hover:bg-blue-600 active:bg-blue-700",
                 "disabled:cursor-not-allowed disabled:opacity-60",
               ].join(" ")}
@@ -729,7 +729,7 @@ export default function Home() {
             </button>
 
             {!canSubmitByActions && !isLoading && (
-              <p className="mt-2 text-center text-xs text-slate-500">
+              <p className="mt-2 text-center text-sm text-slate-500">
                 行動記録を入力するか、チャレンジにチェックを入れてください
               </p>
             )}
@@ -738,7 +738,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => setIsFormExpanded(true)}
-                className="mt-3 w-full text-center text-xs text-slate-500 hover:text-slate-700 hover:underline sm:text-sm"
+                className="mt-3 flex min-h-[48px] w-full items-center justify-center text-center text-sm text-slate-500 hover:text-slate-700 hover:underline"
               >
                 条件を変更する ▼
               </button>
@@ -746,19 +746,19 @@ export default function Home() {
           </section>
 
           {result && (
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-1">
-                  <h2 className="text-base font-semibold text-slate-900">結果</h2>
+            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+              <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 space-y-1">
+                  <h2 className="text-sm font-semibold text-slate-900 sm:text-base">結果</h2>
                   {(result.visit_count ?? 0) >= 2 && (
                     <p className="text-sm font-medium text-blue-600">{result.visit_count}回目の判定です！</p>
                   )}
                   <p className="text-sm text-slate-600">ペルソナタイプ: <span className="font-medium text-slate-900">{result.persona_type}</span></p>
                 </div>
-                <div className="text-right">
-                  <div className="text-xs text-slate-500">合計点</div>
-                  <div className="mt-1 text-2xl font-bold tabular-nums text-slate-900">
-                    {clampOverallScore(result.overall_score)}<span className="text-lg font-semibold text-slate-500">/100点</span>
+                <div className="shrink-0 text-left sm:text-right">
+                  <div className="text-sm text-slate-500">合計点</div>
+                  <div className="mt-1 text-xl font-bold tabular-nums text-slate-900 sm:text-2xl">
+                    {clampOverallScore(result.overall_score)}<span className="text-base font-semibold text-slate-500 sm:text-lg">/100点</span>
                   </div>
                   {(result.challengeBonus ?? 0) > 0 && (
                     <p className="mt-1 text-sm font-medium text-amber-600">
@@ -776,7 +776,7 @@ export default function Home() {
                     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
                     window.open(tweetUrl, "_blank");
                   }}
-                  className="inline-flex items-center gap-2 rounded-lg bg-[#000000] px-6 py-3 text-sm font-medium text-white transition hover:bg-[#1a1a1a]"
+                  className="inline-flex min-h-[48px] items-center gap-2 rounded-lg bg-[#000000] px-6 py-3 text-sm font-medium text-white transition hover:bg-[#1a1a1a]"
                   aria-label="結果をXでシェア"
                 >
                   <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" aria-hidden="true">
@@ -797,7 +797,7 @@ export default function Home() {
                     <div className="mt-3 space-y-2">
                       {result.changes_from_last.improved.length > 0 && (
                         <div>
-                          <span className="text-xs font-medium text-green-700">改善した点</span>
+                          <span className="text-sm font-medium text-green-700">改善した点</span>
                           <ul className="mt-1 list-disc pl-5 text-sm text-green-800">
                             {result.changes_from_last.improved.map((s, i) => (
                               <li key={i}>{s}</li>
@@ -861,7 +861,7 @@ export default function Home() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="text-sm font-semibold text-slate-900">テンプレ：{result.template.title}</div>
-                    <p className="mt-1 text-xs text-slate-500">コピーボタンで貼り付け用テキストをコピーできます。</p>
+                    <p className="mt-1 text-sm text-slate-500">コピーボタンで貼り付け用テキストをコピーできます。</p>
                   </div>
                   <button
                     type="button"
@@ -877,7 +877,7 @@ export default function Home() {
               </div>
 
               {(weeklyReportLoading || weeklyReport) && (
-                <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+                <div className="mt-6 min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm sm:p-5">
                   <h3 className="text-center text-sm font-semibold text-slate-900">📈 あなたの成長記録</h3>
                   {weeklyReportLoading ? (
                     <div className="mt-4 text-center text-sm text-slate-600">集計中...</div>
@@ -905,7 +905,7 @@ export default function Home() {
                       onClick={() => setFeedback(n)}
                       disabled={feedbackSending || feedbackSent}
                       className={[
-                        "h-10 w-10 rounded-xl border text-lg transition",
+                        "flex min-h-[48px] min-w-[48px] items-center justify-center rounded-xl border text-lg transition",
                         feedback >= n ? "border-blue-200 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-400",
                         "hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed",
                       ].join(" ")}
@@ -925,9 +925,9 @@ export default function Home() {
                     placeholder="例：デートの誘い方をもっと詳しく教えてほしい"
                     rows={3}
                     disabled={feedbackSending || feedbackSent}
-                    className="mt-1 w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm leading-6 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:opacity-60"
+                    className="mt-1 min-h-[44px] w-full min-w-0 resize-none rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm leading-6 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:opacity-60"
                   />
-                  <p className="text-right text-xs text-slate-500">
+                  <p className="text-right text-sm text-slate-500">
                     {feedbackComment.length}/{FEEDBACK_COMMENT_MAX}文字
                   </p>
                 </div>
@@ -937,7 +937,7 @@ export default function Home() {
                     onClick={submitFeedback}
                     disabled={feedbackSending || feedback < 1}
                     className={[
-                      "mt-4 w-full rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 transition",
+                      "mt-4 flex min-h-[48px] w-full min-w-0 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 transition",
                       "hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60",
                     ].join(" ")}
                   >
@@ -953,7 +953,7 @@ export default function Home() {
             </section>
           )}
 
-          <footer className="pb-8 text-center text-xs text-slate-400">
+          <footer className="pb-8 pt-4 text-center text-sm text-slate-400">
             <p>※ 医療・法律などの専門助言ではありません。つらい時は信頼できる人や専門家にも相談してね。</p>
           </footer>
         </div>
