@@ -267,6 +267,12 @@ export default function Home() {
   const [hasHistory, setHasHistory] = useState(false);
   const [isFormExpanded, setIsFormExpanded] = useState(false);
 
+  /** 結果画面の折りたたみ（毎回閉じた状態で表示） */
+  const [resultTemplateOpen, setResultTemplateOpen] = useState(false);
+  const [resultGrowthOpen, setResultGrowthOpen] = useState(false);
+  const [resultHomeScreenOpen, setResultHomeScreenOpen] = useState(false);
+  const [resultFeedbackOpen, setResultFeedbackOpen] = useState(false);
+
   /** ランディングの折りたたみ: 前回チャレンジデータが存在する = 診断済み = 閉じる */
   const [isLandingOpen, setIsLandingOpen] = useState<boolean | null>(null);
   useEffect(() => {
@@ -1062,22 +1068,39 @@ export default function Home() {
               </div>
 
               <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 dark:border-gray-600 dark:bg-gray-800">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-semibold text-slate-900 dark:text-gray-100">テンプレ：{result.template.title}</div>
-                    <p className="mt-1 text-sm text-slate-500 dark:text-gray-400">コピーボタンで貼り付け用テキストをコピーできます。</p>
+                <button
+                  type="button"
+                  onClick={() => setResultTemplateOpen((o) => !o)}
+                  className="flex w-full cursor-pointer items-center justify-between gap-2 text-left text-sm font-semibold text-slate-900 transition hover:text-slate-700 dark:text-gray-100 dark:hover:text-gray-300"
+                  aria-expanded={resultTemplateOpen}
+                >
+                  <span>{resultTemplateOpen ? "📝 テンプレを閉じる" : "📝 テンプレを見る"}</span>
+                  <span aria-hidden>{resultTemplateOpen ? "▲" : "▼"}</span>
+                </button>
+                <div
+                  className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${resultTemplateOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="mt-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="text-sm font-semibold text-slate-900 dark:text-gray-100">テンプレ：{result.template.title}</div>
+                          <p className="mt-1 text-sm text-slate-500 dark:text-gray-400">コピーボタンで貼り付け用テキストをコピーできます。</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={copyTemplate}
+                          className="shrink-0 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-200 dark:hover:bg-blue-900/50"
+                        >
+                          {copyState === "copied" ? "コピーした" : copyState === "failed" ? "失敗" : "コピー"}
+                        </button>
+                      </div>
+                      <pre className="mt-3 whitespace-pre-wrap rounded-xl bg-slate-50 p-3 text-sm leading-6 text-gray-900 dark:bg-gray-700 dark:text-gray-100">
+                        {result.template.content}
+                      </pre>
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={copyTemplate}
-                    className="shrink-0 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-200 dark:hover:bg-blue-900/50"
-                  >
-                    {copyState === "copied" ? "コピーした" : copyState === "failed" ? "失敗" : "コピー"}
-                  </button>
                 </div>
-                <pre className="mt-3 whitespace-pre-wrap rounded-xl bg-slate-50 p-3 text-sm leading-6 text-gray-900 dark:bg-gray-700 dark:text-gray-100">
-                  {result.template.content}
-                </pre>
               </div>
 
               {(weeklyReportLoading || weeklyReport) && (
@@ -1105,76 +1128,109 @@ export default function Home() {
               )}
 
               <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/30">
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">📱 ホーム画面に追加しよう！</h3>
-                <p className="mt-2 text-sm text-slate-700 dark:text-gray-300">
-                  ホーム画面に追加すると、アプリのように使えて前回のデータも反映されるよ！
-                </p>
-                <div className="mt-3 text-sm text-slate-700 dark:text-gray-300">
-                  <p className="font-medium">【追加方法】</p>
-                  <ul className="mt-1 list-inside space-y-0.5 pl-0">
-                    <li>・iPhone: 共有ボタン → 「ホーム画面に追加」</li>
-                    <li>・Android: メニュー（︙）→ 「ホーム画面に追加」または「アプリをインストール」</li>
-                  </ul>
+                <button
+                  type="button"
+                  onClick={() => setResultHomeScreenOpen((o) => !o)}
+                  className="flex w-full cursor-pointer items-center justify-between gap-2 text-left text-sm font-semibold text-gray-900 transition hover:text-slate-700 dark:text-gray-100 dark:hover:text-gray-300"
+                  aria-expanded={resultHomeScreenOpen}
+                >
+                  <span>{resultHomeScreenOpen ? "📱 閉じる" : "📱 ホーム画面に追加する方法"}</span>
+                  <span aria-hidden>{resultHomeScreenOpen ? "▲" : "▼"}</span>
+                </button>
+                <div
+                  className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${resultHomeScreenOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="mt-2">
+                      <p className="text-sm text-slate-700 dark:text-gray-300">
+                        ホーム画面に追加すると、アプリのように使えて前回のデータも反映されるよ！
+                      </p>
+                      <div className="mt-3 text-sm text-slate-700 dark:text-gray-300">
+                        <p className="font-medium">【追加方法】</p>
+                        <ul className="mt-1 list-inside space-y-0.5 pl-0">
+                          <li>・iPhone: 共有ボタン → 「ホーム画面に追加」</li>
+                          <li>・Android: メニュー（︙）→ 「ホーム画面に追加」または「アプリをインストール」</li>
+                        </ul>
+                      </div>
+                      <p className="mt-2 text-xs text-slate-600 dark:text-gray-400">※ブックマークでもOK！</p>
+                    </div>
+                  </div>
                 </div>
-                <p className="mt-2 text-xs text-slate-600 dark:text-gray-400">※ブックマークでもOK！</p>
               </div>
 
               <div className="mt-6 border-t border-slate-100 pt-5 dark:border-gray-700">
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">フィードバック</h3>
-                <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">あなたの声で、次のアドバイスがもっと的確に！</p>
-                <p className="mt-2 text-sm font-medium text-slate-700 dark:text-gray-300">この診断、役に立った？</p>
-                <div className="mt-2 flex gap-2">
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      onClick={() => setFeedback(n)}
-                      disabled={feedbackSending || feedbackSent}
-                      className={[
-                        "flex min-h-[48px] min-w-[48px] items-center justify-center rounded-xl border text-lg transition",
-                        feedback >= n ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-200" : "border-slate-200 bg-white text-slate-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400",
-                        "hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed",
-                      ].join(" ")}
-                      aria-label={`フィードバック ${n} / 5`}
-                    >
-                      ★
-                    </button>
-                  ))}
+                <button
+                  type="button"
+                  onClick={() => setResultFeedbackOpen((o) => !o)}
+                  className="flex w-full cursor-pointer items-center justify-between gap-2 text-left text-sm font-semibold text-gray-900 transition hover:text-slate-700 dark:text-gray-100 dark:hover:text-gray-300"
+                  aria-expanded={resultFeedbackOpen}
+                >
+                  <span>{resultFeedbackOpen ? "💬 閉じる" : "💬 フィードバックを送る"}</span>
+                  <span aria-hidden>{resultFeedbackOpen ? "▲" : "▼"}</span>
+                </button>
+                <div
+                  className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${resultFeedbackOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="mt-3">
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">フィードバック</h3>
+                      <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">あなたの声で、次のアドバイスがもっと的確に！</p>
+                      <p className="mt-2 text-sm font-medium text-slate-700 dark:text-gray-300">この診断、役に立った？</p>
+                      <div className="mt-2 flex gap-2">
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <button
+                            key={n}
+                            type="button"
+                            onClick={() => setFeedback(n)}
+                            disabled={feedbackSending || feedbackSent}
+                            className={[
+                              "flex min-h-[48px] min-w-[48px] items-center justify-center rounded-xl border text-lg transition",
+                              feedback >= n ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-200" : "border-slate-200 bg-white text-slate-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400",
+                              "hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed",
+                            ].join(" ")}
+                            aria-label={`フィードバック ${n} / 5`}
+                          >
+                            ★
+                          </button>
+                        ))}
+                      </div>
+                      <div className="mt-4 space-y-1">
+                        <label className="text-sm text-slate-700 dark:text-gray-300">
+                          感想を書いて送信すると、あなた専用へと精度が上がります。（任意）
+                        </label>
+                        <textarea
+                          value={feedbackComment}
+                          onChange={(e) => setFeedbackComment(e.target.value.slice(0, FEEDBACK_COMMENT_MAX))}
+                          placeholder="例：デートの誘い方をもっと詳しく教えてほしい"
+                          rows={3}
+                          disabled={feedbackSending || feedbackSent}
+                          className="mt-1 min-h-[44px] w-full min-w-0 resize-none rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm leading-6 text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder:text-gray-500"
+                        />
+                        <p className="text-right text-sm text-slate-500 dark:text-gray-400">
+                          {feedbackComment.length}/{FEEDBACK_COMMENT_MAX}文字
+                        </p>
+                      </div>
+                      {!feedbackSent && (
+                        <button
+                          type="button"
+                          onClick={submitFeedback}
+                          disabled={feedbackSending || feedback < 1}
+                          className={[
+                            "mt-4 flex min-h-[48px] w-full min-w-0 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 transition dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-200",
+                            "hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-blue-900/50",
+                          ].join(" ")}
+                        >
+                          {feedbackSending ? "送信中..." : "送信する"}
+                        </button>
+                      )}
+                      {feedbackSent && (
+                        <p className="mt-4 text-sm font-medium text-blue-600 dark:text-blue-400">
+                          回答ありがとう！以前よりもあなた専用のパーソナルAIコーチになったよ！
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="mt-4 space-y-1">
-                  <label className="text-sm text-slate-700 dark:text-gray-300">
-                    感想を書いて送信すると、あなた専用へと精度が上がります。（任意）
-                  </label>
-                  <textarea
-                    value={feedbackComment}
-                    onChange={(e) => setFeedbackComment(e.target.value.slice(0, FEEDBACK_COMMENT_MAX))}
-                    placeholder="例：デートの誘い方をもっと詳しく教えてほしい"
-                    rows={3}
-                    disabled={feedbackSending || feedbackSent}
-                    className="mt-1 min-h-[44px] w-full min-w-0 resize-none rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm leading-6 text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder:text-gray-500"
-                  />
-                  <p className="text-right text-sm text-slate-500 dark:text-gray-400">
-                    {feedbackComment.length}/{FEEDBACK_COMMENT_MAX}文字
-                  </p>
-                </div>
-                {!feedbackSent && (
-                  <button
-                    type="button"
-                    onClick={submitFeedback}
-                    disabled={feedbackSending || feedback < 1}
-                    className={[
-                      "mt-4 flex min-h-[48px] w-full min-w-0 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 transition dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-200",
-                      "hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-blue-900/50",
-                    ].join(" ")}
-                  >
-                    {feedbackSending ? "送信中..." : "送信する"}
-                  </button>
-                )}
-                {feedbackSent && (
-                  <p className="mt-4 text-sm font-medium text-blue-600 dark:text-blue-400">
-                    回答ありがとう！以前よりもあなた専用のパーソナルAIコーチになったよ！
-                  </p>
-                )}
                 <div className="mt-6 border-t border-slate-100 pt-5 dark:border-gray-700">
                   <button
                     type="button"
