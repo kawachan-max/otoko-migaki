@@ -267,12 +267,11 @@ export default function Home() {
   const [hasHistory, setHasHistory] = useState(false);
   const [isFormExpanded, setIsFormExpanded] = useState(false);
 
-  /** ランディング（ヒーロー・特徴・使い方）の折りたたみ: 初回は展開、2回目以降は閉じる */
+  /** ランディングの折りたたみ: 診断を1回も完了していない→展開、1回以上完了→閉じる */
   const [landingExpanded, setLandingExpanded] = useState(true);
   useEffect(() => {
-    const visited = typeof window !== "undefined" && window.localStorage.getItem("otoko-migaki-visited") === "true";
-    setLandingExpanded(!visited);
-    if (typeof window !== "undefined" && !visited) window.localStorage.setItem("otoko-migaki-visited", "true");
+    const diagnosed = typeof window !== "undefined" && window.localStorage.getItem("otoko-migaki-diagnosed") === "true";
+    setLandingExpanded(!diagnosed);
   }, []);
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
@@ -472,6 +471,7 @@ export default function Home() {
       }
 
       setResult(data as EvaluateResponse);
+      if (typeof window !== "undefined") window.localStorage.setItem("otoko-migaki-diagnosed", "true");
 
       // 週次レポートを取得
       if (anonymousUserId) {
