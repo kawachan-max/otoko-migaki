@@ -48,7 +48,7 @@ type EvaluateResponse = {
   visit_count?: number;
   growth_comment?: string | null;
   changes_from_last?: { improved: string[]; needs_work: string[] } | null;
-  /** 今回加算したチャレンジボーナス点（0〜6） */
+  /** 今回のチャレンジボーナス（継続力への加点、成長曲線適用後） */
   challengeBonus?: number;
 };
 
@@ -972,7 +972,7 @@ export default function Home() {
                   </div>
                   {(result.challengeBonus ?? 0) > 0 && (
                     <p className="mt-1 text-sm font-medium text-amber-600">
-                      🎁 チャレンジボーナス: +{result.challengeBonus}点
+                      🎁 チャレンジボーナス獲得（継続力に反映済み）
                     </p>
                   )}
                 </div>
@@ -1052,7 +1052,7 @@ export default function Home() {
                     const difficulty = c.difficulty ?? (i === 0 ? "easy" : i === 1 ? "medium" : "challenge");
                     const icon = difficulty === "easy" ? "🟢" : difficulty === "medium" ? "🟡" : "🔴";
                     const label = difficulty === "easy" ? "【簡単】" : difficulty === "medium" ? "【中級】" : "【挑戦】";
-                    const bonus = difficulty === "easy" ? "+1点" : difficulty === "medium" ? "+2点" : "+3点";
+                    const bonus = difficulty === "easy" ? "小ボーナス" : difficulty === "medium" ? "中ボーナス" : "大ボーナス";
                     return (
                       <div key={i} className="rounded-xl border border-slate-200 bg-white px-3 py-3 dark:border-gray-600 dark:bg-gray-700">
                         <span className="text-sm text-slate-800 dark:text-gray-200">
@@ -1063,7 +1063,7 @@ export default function Home() {
                   })}
                 </div>
                 <p className="mt-3 text-sm text-slate-600 dark:text-gray-300">
-                  挑戦した分だけ次回ボーナス加点されます！
+                  挑戦した分だけ次回 小・中・大ボーナスが継続力に反映されます！
                 </p>
               </div>
 

@@ -51,7 +51,7 @@ type EvaluateResponse = {
   visit_count: number;
   growth_comment: string | null;
   changes_from_last: { improved: string[]; needs_work: string[] } | null;
-  /** 今回加算したチャレンジボーナス点（0〜6） */
+  /** 今回のチャレンジボーナス（継続力への加点、成長曲線適用後） */
   challengeBonus: number;
 };
 
@@ -621,20 +621,21 @@ export async function POST(req: Request) {
       days_since: daysSinceLastEvaluation,
       is_first_time: isFirstTime,
     });
-    normalized.category_scores = computedScores;
-    const sumScores = Object.values(computedScores).reduce((a, b) => a + b, 0);
-    normalized.overall_score = Math.min(100, Math.round(sumScores)); // 表示用に合計を四捨五入
 
-    // チャレンジ達成ボーナスを加点（簡単+1、中級+2、挑戦+3、最大+6点、100点上限）
+    // チャレンジ達成ボーナス: 継続力に 0.3/0.5/0.8 を加点（成長曲線適用）
     const easyDone = body.challenge_easy_done === true || (Array.isArray(body.challenge_bonus) && body.challenge_bonus[0] === true);
     const mediumDone = body.challenge_medium_done === true || (Array.isArray(body.challenge_bonus) && body.challenge_bonus[1] === true);
     const hardDone = body.challenge_hard_done === true || (Array.isArray(body.challenge_bonus) && body.challenge_bonus[2] === true);
-    let bonusPoints = 0;
-    if (easyDone) bonusPoints += 1;
-    if (mediumDone) bonusPoints += 2;
-    if (hardDone) bonusPoints += 3;
-    normalized.challengeBonus = bonusPoints;
-    normalized.overall_score = Math.min(100, normalized.overall_score + bonusPoints);
+    const rawChallengeBonus = (easyDone ? 0.3 : 0) + (mediumDone ? 0.5 : 0) + (hardDone ? 0.8 : 0);
+    const consistencyBefore = computedScores.consistency;
+    const challengeMult = getGrowthMultiplier(consistencyBefore);
+    const challengeAdd = round2(rawChallengeBonus * challengeMult);
+    computedScores.consistency = round2(Math.min(10, Math.max(1, consistencyBefore + challengeAdd)));
+    normalized.category_scores = computedScores;
+    normalized.challengeBonus = challengeAdd; // 継続力に実際に加算した量（表示用「反映済み」の根拠）
+
+    const sumScores = Object.values(computedScores).reduce((a, b) => a + b, 0);
+    normalized.overall_score = Math.min(100, Math.round(sumScores)); // 表示用に合計を四捨五入
 
     let supabase;
     try {
