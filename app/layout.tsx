@@ -14,6 +14,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
+  manifest: "/manifest.json",
   title: "男磨きAI - 恋愛経験ゼロから彼女ゲットまで応援",
   description:
     "AIが一緒に成長する恋のコーチ。匿名・無料・1分で診断。10カテゴリ100点満点であなたの男磨き度を判定し、具体的なアドバイスをお届けします。",
