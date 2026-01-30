@@ -995,7 +995,7 @@ export default function Home() {
                 )}
                 {feedbackSent && (
                   <p className="mt-4 text-sm font-medium text-blue-600 dark:text-blue-400">
-                    ありがとう！あなたと仲間のために、次から反映されるよ！
+                    回答ありがとう！以前よりもあなた専用のパーソナルAIコーチになったよ！
                   </p>
                 )}
               </div>
@@ -1004,6 +1004,16 @@ export default function Home() {
 
           <footer className="pb-8 pt-4 text-center text-sm text-slate-400 dark:text-gray-500">
             <p>※ 医療・法律などの専門助言ではありません。つらい時は信頼できる人や専門家にも相談してね。</p>
+            <p className="py-4 text-sm text-gray-500 dark:text-gray-400">
+              <a
+                href="https://x.com/aihappystudy?s=21&t=9T3S0nw2rcAWkxlAzWHrZA"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:underline"
+              >
+                powered by punk
+              </a>
+            </p>
           </footer>
         </div>
       </div>
