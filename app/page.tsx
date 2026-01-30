@@ -267,6 +267,14 @@ export default function Home() {
   const [hasHistory, setHasHistory] = useState(false);
   const [isFormExpanded, setIsFormExpanded] = useState(false);
 
+  /** ランディング（ヒーロー・特徴・使い方）の折りたたみ: 初回は展開、2回目以降は閉じる */
+  const [landingExpanded, setLandingExpanded] = useState(true);
+  useEffect(() => {
+    const visited = typeof window !== "undefined" && window.localStorage.getItem("otoko-migaki-visited") === "true";
+    setLandingExpanded(!visited);
+    if (typeof window !== "undefined" && !visited) window.localStorage.setItem("otoko-migaki-visited", "true");
+  }, []);
+
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [themeMounted, setThemeMounted] = useState(false);
   useEffect(() => {
@@ -546,40 +554,20 @@ export default function Home() {
   return (
     <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-white dark:bg-gray-900">
       <div className="mx-auto w-full min-w-0 max-w-2xl px-4 py-8 sm:py-10">
-        <header className="flex items-start justify-between gap-4">
-          <div className="min-w-0 space-y-2">
-            <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-2xl md:text-3xl">
-              男磨きAI
-            </h1>
-            <p className="text-sm text-slate-700 dark:text-gray-300 sm:text-base md:text-lg">
-              恋愛経験ゼロから彼女ゲットまで応援！AIが一緒に成長する恋のコーチ
-            </p>
-            <p className="text-sm text-slate-500 dark:text-gray-400 sm:text-sm">
-              匿名・無料・1分で診断 & 続けるほど成長が見えます
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={handleNewDiagnosis}
-              className="flex min-h-[48px] min-w-[48px] items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-xl transition hover:bg-slate-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
-              aria-label="新しく診断する"
-              title="新しく診断する"
-            >
-              🔄
-            </button>
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="flex min-h-[48px] min-w-[48px] items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-xl transition hover:bg-slate-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
-              aria-label={theme === "light" ? "ダークモードに切り替え" : "ライトモードに切り替え"}
-              title={theme === "light" ? "ダークモード" : "ライトモード"}
-            >
-              {theme === "light" ? "🌙" : "☀️"}
-            </button>
-          </div>
-        </header>
+        {/* ランディング折りたたみトリガー（常に表示） */}
+        <div className="py-2 text-center">
+          <button
+            type="button"
+            onClick={() => setLandingExpanded((prev) => !prev)}
+            className="cursor-pointer text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+            aria-expanded={landingExpanded}
+          >
+            {landingExpanded ? "▲ 閉じる" : "▼ サービス説明を見る"}
+          </button>
+        </div>
 
+        {landingExpanded && (
+          <>
         {/* ヒーローセクション */}
         <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 px-6 py-16 text-white shadow-xl dark:from-blue-700 dark:via-blue-800 dark:to-indigo-900 sm:px-10 sm:py-20">
           <h2 className="text-center text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl">
@@ -634,7 +622,11 @@ export default function Home() {
         </section>
 
         {/* 使い方セクション */}
-        <section className="py-16">
+        <section
+          ref={howToRef}
+          data-section="howto"
+          className={`py-16 transition-all duration-500 ${visibleSections.has("howto") ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"}`}
+        >
           <h3 className="mb-10 text-center text-xl font-bold text-gray-900 dark:text-gray-100 sm:text-2xl">
             使い方（3ステップ）
           </h3>
@@ -669,19 +661,56 @@ export default function Home() {
           data-section="cta"
           className={`py-8 transition-all duration-500 ${visibleSections.has("cta") ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"}`}
         >
-          <div className="flex flex-wrap items-center justify-center gap-4">
+          <div className="flex flex-col items-center justify-center gap-4">
             <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
               匿名・無料・1分で診断
             </span>
             <button
               type="button"
               onClick={scrollToDiagnosisForm}
-              className="min-h-[48px] rounded-xl border-2 border-blue-500 bg-transparent px-6 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-50 dark:border-blue-500 dark:text-blue-400 dark:hover:bg-blue-900/30"
+              className="min-h-[56px] rounded-xl bg-blue-600 px-8 py-4 text-lg font-bold text-white shadow-md transition hover:bg-blue-700 active:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-500 dark:active:bg-blue-700"
             >
               診断を始める
             </button>
           </div>
         </section>
+          </>
+        )}
+
+        {/* ヘッダー（診断フォームのすぐ上） */}
+        <header className="flex items-start justify-between gap-4 pt-4">
+          <div className="min-w-0 space-y-2">
+            <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-2xl md:text-3xl">
+              男磨きAI
+            </h1>
+            <p className="text-sm text-slate-700 dark:text-gray-300 sm:text-base md:text-lg">
+              恋愛経験ゼロから彼女ゲットまで応援！AIが一緒に成長する恋のコーチ
+            </p>
+            <p className="text-sm text-slate-500 dark:text-gray-400 sm:text-sm">
+              匿名・無料・1分で診断 & 続けるほど成長が見えます
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={handleNewDiagnosis}
+              className="flex min-h-[48px] min-w-[48px] items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-xl transition hover:bg-slate-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
+              aria-label="新しく診断する"
+              title="新しく診断する"
+            >
+              🔄
+            </button>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="flex min-h-[48px] min-w-[48px] items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-xl transition hover:bg-slate-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
+              aria-label={theme === "light" ? "ダークモードに切り替え" : "ライトモードに切り替え"}
+              title={theme === "light" ? "ダークモード" : "ライトモード"}
+            >
+              {theme === "light" ? "🌙" : "☀️"}
+            </button>
+          </div>
+        </header>
 
         <div id="diagnosis-form" className="scroll-mt-24">
           <div className="space-y-5 sm:space-y-6">
