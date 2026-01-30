@@ -942,6 +942,21 @@ export default function Home() {
                 </div>
               )}
 
+              <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/30">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">📌 履歴を残すコツ</h3>
+                <p className="mt-2 text-sm text-slate-700 dark:text-gray-300">
+                  このページをブックマークしておくと、次回アクセス時に前回のデータが反映されるよ！
+                </p>
+                <div className="mt-3 text-sm text-slate-700 dark:text-gray-300">
+                  <p className="font-medium">【ブックマーク方法】</p>
+                  <ul className="mt-1 list-inside space-y-0.5 pl-0">
+                    <li>・iPhone: 共有ボタン → ブックマークを追加</li>
+                    <li>・Android: メニュー → ブックマーク</li>
+                    <li>・PC: Ctrl+D (Mac: Cmd+D)</li>
+                  </ul>
+                </div>
+              </div>
+
               <div className="mt-6 border-t border-slate-100 pt-5 dark:border-gray-700">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">フィードバック</h3>
                 <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">あなたの声で、次のアドバイスがもっと的確に！</p>
