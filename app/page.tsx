@@ -1067,7 +1067,7 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 dark:border-gray-600 dark:bg-gray-800">
+              <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 dark:border-gray-600 dark:bg-gray-800">
                 <button
                   type="button"
                   onClick={() => setResultTemplateOpen((o) => !o)}
@@ -1104,7 +1104,7 @@ export default function Home() {
               </div>
 
               {(weeklyReportLoading || weeklyReport) && (
-                <div className="mt-6 min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm dark:border-gray-600 dark:bg-gray-800 sm:p-5">
+                <div className="mb-4 min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm dark:border-gray-600 dark:bg-gray-800 sm:p-5">
                   <button
                     type="button"
                     onClick={() => setResultGrowthOpen((o) => !o)}
@@ -1141,7 +1141,7 @@ export default function Home() {
                 </div>
               )}
 
-              <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/30">
+              <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/30">
                 <button
                   type="button"
                   onClick={() => setResultHomeScreenOpen((o) => !o)}
@@ -1151,28 +1151,26 @@ export default function Home() {
                   <span>{resultHomeScreenOpen ? "📱 閉じる" : "📱 ホーム画面に追加する方法"}</span>
                   <span aria-hidden>{resultHomeScreenOpen ? "▲" : "▼"}</span>
                 </button>
+                <p className="mt-2 text-sm text-slate-700 dark:text-gray-300">
+                  ホーム画面に追加すると、アプリのように使えて前回のデータも反映されるよ！
+                </p>
                 <div
                   className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${resultHomeScreenOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
                 >
                   <div className="overflow-hidden">
-                    <div className="mt-2">
-                      <p className="text-sm text-slate-700 dark:text-gray-300">
-                        ホーム画面に追加すると、アプリのように使えて前回のデータも反映されるよ！
-                      </p>
-                      <div className="mt-3 text-sm text-slate-700 dark:text-gray-300">
-                        <p className="font-medium">【追加方法】</p>
-                        <ul className="mt-1 list-inside space-y-0.5 pl-0">
-                          <li>・iPhone: 共有ボタン → 「ホーム画面に追加」</li>
-                          <li>・Android: メニュー（︙）→ 「ホーム画面に追加」または「アプリをインストール」</li>
-                        </ul>
-                      </div>
+                    <div className="mt-3 text-sm text-slate-700 dark:text-gray-300">
+                      <p className="font-medium">【追加方法】</p>
+                      <ul className="mt-1 list-inside space-y-0.5 pl-0">
+                        <li>・iPhone: 共有ボタン → 「ホーム画面に追加」</li>
+                        <li>・Android: メニュー（︙）→ 「ホーム画面に追加」または「アプリをインストール」</li>
+                      </ul>
                       <p className="mt-2 text-xs text-slate-600 dark:text-gray-400">※ブックマークでもOK！</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-6 border-t border-slate-100 pt-5 dark:border-gray-700">
+              <div className="mb-4 border-t border-slate-100 pt-4 dark:border-gray-700">
                 <button
                   type="button"
                   onClick={() => setResultFeedbackOpen((o) => !o)}
@@ -1182,14 +1180,15 @@ export default function Home() {
                   <span>{resultFeedbackOpen ? "💬 閉じる" : "💬 フィードバックを送る"}</span>
                   <span aria-hidden>{resultFeedbackOpen ? "▲" : "▼"}</span>
                 </button>
+                <p className="mt-2 text-sm text-slate-600 dark:text-gray-300">
+                  あなたの声で、次のアドバイスがもっと的確に！
+                </p>
                 <div
                   className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${resultFeedbackOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
                 >
                   <div className="overflow-hidden">
                     <div className="mt-3">
-                      <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">フィードバック</h3>
-                      <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">あなたの声で、次のアドバイスがもっと的確に！</p>
-                      <p className="mt-2 text-sm font-medium text-slate-700 dark:text-gray-300">この診断、役に立った？</p>
+                      <p className="text-sm font-medium text-slate-700 dark:text-gray-300">この診断、役に立った？</p>
                       <div className="mt-2 flex gap-2">
                         {[1, 2, 3, 4, 5].map((n) => (
                           <button
@@ -1245,7 +1244,7 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
-                <div className="mt-6 border-t border-slate-100 pt-5 dark:border-gray-700">
+                <div className="mt-4 border-t border-slate-100 pt-4 dark:border-gray-700">
                   <button
                     type="button"
                     onClick={handleNewDiagnosis}
