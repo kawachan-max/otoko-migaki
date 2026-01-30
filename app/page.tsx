@@ -270,9 +270,14 @@ export default function Home() {
   /** ランディングの折りたたみ: null=未判定、true=展開、false=閉じる。診断1回以上完了なら閉じる */
   const [isLandingOpen, setIsLandingOpen] = useState<boolean | null>(null);
   useEffect(() => {
-    const diagnosed = typeof window !== "undefined" && window.localStorage.getItem("otoko-migaki-diagnosed") === "true";
+    if (typeof window === "undefined") return;
+    const diagnosed = window.localStorage.getItem("otoko-migaki-diagnosed") === "true";
+    console.log("[landing] diagnosed:", window.localStorage.getItem("otoko-migaki-diagnosed"), "→ isLandingOpen:", !diagnosed);
     setIsLandingOpen(!diagnosed);
   }, []);
+  useEffect(() => {
+    console.log("[landing] isLandingOpen:", isLandingOpen);
+  }, [isLandingOpen]);
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [themeMounted, setThemeMounted] = useState(false);
@@ -471,7 +476,10 @@ export default function Home() {
       }
 
       setResult(data as EvaluateResponse);
-      if (typeof window !== "undefined") window.localStorage.setItem("otoko-migaki-diagnosed", "true");
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("otoko-migaki-diagnosed", "true");
+        console.log("[landing] 診断完了 → otoko-migaki-diagnosed を保存:", window.localStorage.getItem("otoko-migaki-diagnosed"));
+      }
 
       // 週次レポートを取得
       if (anonymousUserId) {
@@ -587,12 +595,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 特徴セクション */}
-        <section
-          ref={featuresRef}
-          data-section="features"
-          className={`py-16 transition-all duration-500 ${visibleSections.has("features") ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"}`}
-        >
+        {/* 特徴セクション（ランディング表示時は常に表示） */}
+        <section ref={featuresRef} data-section="features" className="py-16">
           <h3 className="mb-10 text-center text-xl font-bold text-gray-900 dark:text-gray-100 sm:text-2xl">
             こんな人におすすめ
           </h3>
@@ -621,12 +625,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 使い方セクション */}
-        <section
-          ref={howToRef}
-          data-section="howto"
-          className={`py-16 transition-all duration-500 ${visibleSections.has("howto") ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"}`}
-        >
+        {/* 使い方セクション（ランディング表示時は常に表示） */}
+        <section ref={howToRef} data-section="howto" className="py-16">
           <h3 className="mb-10 text-center text-xl font-bold text-gray-900 dark:text-gray-100 sm:text-2xl">
             使い方（3ステップ）
           </h3>
@@ -655,12 +655,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* CTA（フォームの上） */}
-        <section
-          ref={ctaRef}
-          data-section="cta"
-          className={`py-8 transition-all duration-500 ${visibleSections.has("cta") ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"}`}
-        >
+        {/* CTA（フォームの上）（ランディング表示時は常に表示） */}
+        <section ref={ctaRef} data-section="cta" className="py-8">
           <div className="flex flex-col items-center justify-center gap-4">
             <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
               匿名・無料・1分で診断
