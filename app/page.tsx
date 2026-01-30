@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -287,6 +287,30 @@ export default function Home() {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
   }
 
+  function scrollToDiagnosisForm() {
+    document.getElementById("diagnosis-form")?.scrollIntoView({ behavior: "smooth" });
+  }
+
+  /** スクロールでふわっと表示用 */
+  const [visibleSections, setVisibleSections] = useState<Set<string>>(new Set());
+  const featuresRef = useRef<HTMLElement>(null);
+  const howToRef = useRef<HTMLElement>(null);
+  const ctaRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const id = (entry.target as HTMLElement).dataset.section;
+          if (id && entry.isIntersecting) setVisibleSections((prev) => new Set(prev).add(id));
+        });
+      },
+      { rootMargin: "-10% 0px -10% 0px", threshold: 0 }
+    );
+    const els = [featuresRef.current, howToRef.current, ctaRef.current];
+    els.forEach((el) => el && obs.observe(el));
+    return () => obs.disconnect();
+  }, []);
+
   /** 新しく診断する: 結果の「今週のチャレンジ」を前回チャレンジに反映し、行動記録・チェックをクリアして結果を非表示にする */
   function handleNewDiagnosis() {
     if (result?.challenges?.length === 3) {
@@ -556,7 +580,111 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="mt-6 space-y-5 sm:mt-8 sm:space-y-6">
+        {/* ヒーローセクション */}
+        <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 px-6 py-16 text-white shadow-xl dark:from-blue-700 dark:via-blue-800 dark:to-indigo-900 sm:px-10 sm:py-20">
+          <h2 className="text-center text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl">
+            AIがあなたの&quot;男磨き&quot;を数値化
+          </h2>
+          <p className="mt-4 text-center text-base text-blue-100 sm:text-lg dark:text-blue-200">
+            恋愛経験ゼロでも大丈夫。AIコーチと一緒に成長しよう
+          </p>
+          <div className="mt-8 flex justify-center">
+            <button
+              type="button"
+              onClick={scrollToDiagnosisForm}
+              className="min-h-[52px] rounded-2xl bg-white px-8 py-4 text-lg font-bold text-blue-600 shadow-lg transition hover:scale-105 hover:shadow-xl active:scale-100 dark:bg-white dark:text-blue-700"
+            >
+              無料で診断する
+            </button>
+          </div>
+        </section>
+
+        {/* 特徴セクション */}
+        <section
+          ref={featuresRef}
+          data-section="features"
+          className={`py-16 transition-all duration-500 ${visibleSections.has("features") ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"}`}
+        >
+          <h3 className="mb-10 text-center text-xl font-bold text-gray-900 dark:text-gray-100 sm:text-2xl">
+            こんな人におすすめ
+          </h3>
+          <div className="grid gap-6 sm:grid-cols-3">
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-md transition dark:border-gray-600 dark:bg-gray-800 dark:shadow-none">
+              <div className="text-2xl">📊</div>
+              <h4 className="mt-3 text-base font-semibold text-gray-900 dark:text-gray-100">10カテゴリで総合評価</h4>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-gray-300">
+                清潔感、ファッション、会話力など10項目を100点満点で採点
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-md transition dark:border-gray-600 dark:bg-gray-800 dark:shadow-none">
+              <div className="text-2xl">📈</div>
+              <h4 className="mt-3 text-base font-semibold text-gray-900 dark:text-gray-100">成長を可視化</h4>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-gray-300">
+                診断するたびにグラフで成長が見える
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-md transition dark:border-gray-600 dark:bg-gray-800 dark:shadow-none">
+              <div className="text-2xl">🎯</div>
+              <h4 className="mt-3 text-base font-semibold text-gray-900 dark:text-gray-100">毎週のチャレンジ提案</h4>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-gray-300">
+                あなたに合った具体的なアクションを提案
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* 使い方セクション */}
+        <section className="py-16">
+          <h3 className="mb-10 text-center text-xl font-bold text-gray-900 dark:text-gray-100 sm:text-2xl">
+            使い方（3ステップ）
+          </h3>
+          <div className="grid gap-8 sm:grid-cols-3">
+            <div className="flex flex-col items-center text-center">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-100 text-lg font-bold text-blue-600 dark:bg-blue-900/40 dark:text-blue-300">
+                Step1
+              </span>
+              <h4 className="mt-4 text-base font-semibold text-gray-900 dark:text-gray-100">今週の行動を入力</h4>
+              <p className="mt-2 text-sm text-slate-600 dark:text-gray-400">1分で完了</p>
+            </div>
+            <div className="flex flex-col items-center text-center">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-100 text-lg font-bold text-blue-600 dark:bg-blue-900/40 dark:text-blue-300">
+                Step2
+              </span>
+              <h4 className="mt-4 text-base font-semibold text-gray-900 dark:text-gray-100">AIが分析・採点</h4>
+              <p className="mt-2 text-sm text-slate-600 dark:text-gray-400">10カテゴリで評価</p>
+            </div>
+            <div className="flex flex-col items-center text-center">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-100 text-lg font-bold text-blue-600 dark:bg-blue-900/40 dark:text-blue-300">
+                Step3
+              </span>
+              <h4 className="mt-4 text-base font-semibold text-gray-900 dark:text-gray-100">改善ポイントをチェック</h4>
+              <p className="mt-2 text-sm text-slate-600 dark:text-gray-400">アドバイスを実践</p>
+            </div>
+          </div>
+        </section>
+
+        {/* CTA（フォームの上） */}
+        <section
+          ref={ctaRef}
+          data-section="cta"
+          className={`py-8 transition-all duration-500 ${visibleSections.has("cta") ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"}`}
+        >
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+              匿名・無料・1分で診断
+            </span>
+            <button
+              type="button"
+              onClick={scrollToDiagnosisForm}
+              className="min-h-[48px] rounded-xl border-2 border-blue-500 bg-transparent px-6 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-50 dark:border-blue-500 dark:text-blue-400 dark:hover:bg-blue-900/30"
+            >
+              診断を始める
+            </button>
+          </div>
+        </section>
+
+        <div id="diagnosis-form" className="scroll-mt-24">
+          <div className="space-y-5 sm:space-y-6">
           {(hasHistory && isFormExpanded) || !hasHistory ? (
             <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-gray-600 dark:bg-gray-800 sm:p-5">
               <div className="flex items-center justify-between gap-2">
@@ -1055,6 +1183,7 @@ export default function Home() {
             </section>
           )}
 
+          </div>
         </div>
       </div>
     </div>
