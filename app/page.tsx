@@ -319,7 +319,7 @@ export default function Home() {
     setFeedback(0);
     setFeedbackComment("");
     setFeedbackSent(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setTimeout(() => scrollToDiagnosisForm(), 0);
   }
 
   // 週次レポート
