@@ -516,15 +516,26 @@ export default function Home() {
               匿名・無料・1分で診断 & 続けるほど成長が見えます
             </p>
           </div>
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="min-h-[48px] min-w-[48px] shrink-0 rounded-xl border border-slate-200 bg-white p-2 text-xl transition hover:bg-slate-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
-            aria-label={theme === "light" ? "ダークモードに切り替え" : "ライトモードに切り替え"}
-            title={theme === "light" ? "ダークモード" : "ライトモード"}
-          >
-            {theme === "light" ? "🌙" : "☀️"}
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="flex min-h-[48px] min-w-[48px] items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-xl transition hover:bg-slate-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
+              aria-label="ページを再読み込み"
+              title="新しく診断する（再読み込み）"
+            >
+              🔄
+            </button>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="flex min-h-[48px] min-w-[48px] items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-xl transition hover:bg-slate-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
+              aria-label={theme === "light" ? "ダークモードに切り替え" : "ライトモードに切り替え"}
+              title={theme === "light" ? "ダークモード" : "ライトモード"}
+            >
+              {theme === "light" ? "🌙" : "☀️"}
+            </button>
+          </div>
         </header>
 
         <div className="mt-6 space-y-5 sm:mt-8 sm:space-y-6">
@@ -1013,6 +1024,18 @@ export default function Home() {
                     回答ありがとう！以前よりもあなた専用のパーソナルAIコーチになったよ！
                   </p>
                 )}
+                <div className="mt-6 border-t border-slate-100 pt-5 dark:border-gray-700">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setResult(null);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className="flex min-h-[48px] w-full min-w-0 items-center justify-center gap-2 rounded-xl border-2 border-blue-500 bg-transparent px-4 py-3 text-sm font-semibold text-blue-600 transition hover:bg-blue-50 dark:border-blue-500 dark:text-blue-400 dark:hover:bg-blue-900/30"
+                  >
+                    🔄 新しく診断する
+                  </button>
+                </div>
               </div>
             </section>
           )}
