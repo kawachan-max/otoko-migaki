@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -303,26 +303,6 @@ export default function Home() {
     document.getElementById("diagnosis-form")?.scrollIntoView({ behavior: "smooth" });
   }
 
-  /** スクロールでふわっと表示用 */
-  const [visibleSections, setVisibleSections] = useState<Set<string>>(new Set());
-  const featuresRef = useRef<HTMLElement>(null);
-  const howToRef = useRef<HTMLElement>(null);
-  const ctaRef = useRef<HTMLElement>(null);
-  useEffect(() => {
-    const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          const id = (entry.target as HTMLElement).dataset.section;
-          if (id && entry.isIntersecting) setVisibleSections((prev) => new Set(prev).add(id));
-        });
-      },
-      { rootMargin: "-10% 0px -10% 0px", threshold: 0 }
-    );
-    const els = [featuresRef.current, howToRef.current, ctaRef.current];
-    els.forEach((el) => el && obs.observe(el));
-    return () => obs.disconnect();
-  }, []);
-
   /** 新しく診断する: 結果の「今週のチャレンジ」を前回チャレンジに反映し、行動記録・チェックをクリアして結果を非表示にする */
   function handleNewDiagnosis() {
     if (result?.challenges?.length === 3) {
@@ -596,7 +576,7 @@ export default function Home() {
         </section>
 
         {/* 特徴セクション（ランディング表示時は常に表示） */}
-        <section ref={featuresRef} data-section="features" className="py-16">
+        <section className="py-16">
           <h3 className="mb-10 text-center text-xl font-bold text-gray-900 dark:text-gray-100 sm:text-2xl">
             こんな人におすすめ
           </h3>
@@ -626,7 +606,7 @@ export default function Home() {
         </section>
 
         {/* 使い方セクション（ランディング表示時は常に表示） */}
-        <section ref={howToRef} data-section="howto" className="py-16">
+        <section className="py-16">
           <h3 className="mb-10 text-center text-xl font-bold text-gray-900 dark:text-gray-100 sm:text-2xl">
             使い方（3ステップ）
           </h3>
@@ -656,7 +636,7 @@ export default function Home() {
         </section>
 
         {/* CTA（フォームの上）（ランディング表示時は常に表示） */}
-        <section ref={ctaRef} data-section="cta" className="py-8">
+        <section className="py-8">
           <div className="flex flex-col items-center justify-center gap-4">
             <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
               匿名・無料・1分で診断
