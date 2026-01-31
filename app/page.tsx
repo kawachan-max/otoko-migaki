@@ -1009,7 +1009,7 @@ export default function Home() {
                   </div>
                   {(result.challengeBonus ?? 0) > 0 && (
                     <p className="mt-1 text-sm font-medium text-amber-600">
-                      🎁 チャレンジボーナス獲得（継続力に反映済み）
+                      🎁 チャレンジボーナス獲得！
                     </p>
                   )}
                 </div>
