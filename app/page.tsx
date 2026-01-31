@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -84,6 +84,48 @@ function AxisBar({ label, score }: { label: string; score: number }) {
         <span className="min-w-0 truncate">{label}</span>
         <span className="shrink-0 tabular-nums">{s}/10</span>
       </div>
+      <div className="h-2.5 w-full min-w-0 rounded-full bg-slate-100 dark:bg-gray-700">
+        <div className="h-2.5 rounded-full bg-blue-500" style={{ width: `${(s / 10) * 100}%` }} />
+      </div>
+    </div>
+  );
+}
+
+/** カテゴリ行（通常時は短いラベル、タップで説明展開） */
+function CategoryScoreRow({
+  index,
+  fullLabel,
+  score,
+  expanded,
+  onToggle,
+}: {
+  index: number;
+  fullLabel: string;
+  score: number;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const shortLabel = fullLabel.includes("（")
+    ? `${index}. ${fullLabel.split("（")[0].trim()}`
+    : `${index}. ${fullLabel}`;
+  const label = expanded ? `${index}. ${fullLabel}` : shortLabel;
+  const s = clampCategoryScore(score);
+  return (
+    <div className="min-w-0 space-y-1">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between gap-2 text-left text-sm text-slate-600 dark:text-gray-300"
+        aria-expanded={expanded}
+      >
+        <span className={expanded ? "min-w-0 break-words" : "min-w-0 truncate"}>{label}</span>
+        <span className="flex shrink-0 items-center gap-1">
+          <span className="tabular-nums">{s}/10</span>
+          <span className="text-xs text-slate-400" aria-hidden>
+            {expanded ? "▼" : "ℹ️"}
+          </span>
+        </span>
+      </button>
       <div className="h-2.5 w-full min-w-0 rounded-full bg-slate-100 dark:bg-gray-700">
         <div className="h-2.5 rounded-full bg-blue-500" style={{ width: `${(s / 10) * 100}%` }} />
       </div>
@@ -278,6 +320,15 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<EvaluateResponse | null>(null);
+  const resultSectionRef = useRef<HTMLElement>(null);
+  const [expandedCategoryKey, setExpandedCategoryKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (result) {
+      resultSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      setExpandedCategoryKey(null);
+    }
+  }, [result]);
 
   // result UI states
   const [challengeBonus, setChallengeBonus] = useState<[boolean, boolean, boolean]>([false, false, false]);
@@ -995,7 +1046,10 @@ export default function Home() {
           </section>
 
           {result && (
-            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-gray-600 dark:bg-gray-800 sm:p-5">
+            <section
+              ref={resultSectionRef}
+              className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-gray-600 dark:bg-gray-800 sm:p-5"
+            >
               <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0 space-y-1">
                   <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100 sm:text-base">結果</h2>
@@ -1099,7 +1153,14 @@ export default function Home() {
 
               <div className="mt-5 grid grid-cols-1 gap-3">
                 {CATEGORY_DISPLAY.map(({ key, label }, i) => (
-                  <AxisBar key={key} label={`${i + 1}. ${label}`} score={Math.round(result.category_scores[key])} />
+                  <CategoryScoreRow
+                    key={key}
+                    index={i + 1}
+                    fullLabel={label}
+                    score={Math.round(result.category_scores[key])}
+                    expanded={expandedCategoryKey === key}
+                    onToggle={() => setExpandedCategoryKey((prev) => (prev === key ? null : key))}
+                  />
                 ))}
               </div>
 
