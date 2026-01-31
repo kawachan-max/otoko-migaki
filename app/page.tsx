@@ -258,7 +258,6 @@ export default function Home() {
   const canSubmitByActions = actionsToSend.length >= 1;
   const [feedback, setFeedback] = useState<number>(0);
   const [feedbackComment, setFeedbackComment] = useState<string>("");
-  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [feedbackSending, setFeedbackSending] = useState(false);
   const FEEDBACK_COMMENT_MAX = 200;
@@ -321,7 +320,6 @@ export default function Home() {
     setActionsText("");
     setResult(null);
     setError(null);
-    setCopyState("idle");
     setFeedback(0);
     setFeedbackComment("");
     setFeedbackSent(false);
@@ -403,7 +401,6 @@ export default function Home() {
   async function onSubmit() {
     setError(null);
     setResult(null);
-    setCopyState("idle");
     setFeedback(0);
     setFeedbackComment("");
     setFeedbackSent(false);
@@ -530,18 +527,6 @@ export default function Home() {
       setError(e instanceof Error ? e.message : "送信に失敗しました。");
     } finally {
       setFeedbackSending(false);
-    }
-  }
-
-  async function copyTemplate() {
-    if (!result) return;
-    try {
-      await navigator.clipboard.writeText(result.template.content);
-      setCopyState("copied");
-      window.setTimeout(() => setCopyState("idle"), 1200);
-    } catch {
-      setCopyState("failed");
-      window.setTimeout(() => setCopyState("idle"), 1200);
     }
   }
 
@@ -1079,42 +1064,6 @@ export default function Home() {
                 <p className="mt-3 text-sm text-slate-600 dark:text-gray-300">
                   挑戦した分だけ次回 小・中・大ボーナスが継続力に反映されます！
                 </p>
-              </div>
-
-              <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 dark:border-gray-600 dark:bg-gray-800">
-                <button
-                  type="button"
-                  onClick={() => setResultTemplateOpen((o) => !o)}
-                  className="flex w-full cursor-pointer items-center justify-between gap-2 text-left text-sm font-semibold text-slate-900 transition hover:text-slate-700 dark:text-gray-100 dark:hover:text-gray-300"
-                  aria-expanded={resultTemplateOpen}
-                >
-                  <span>{resultTemplateOpen ? "📝 テンプレを閉じる" : "📝 テンプレを見る"}</span>
-                  <span aria-hidden>{resultTemplateOpen ? "▲" : "▼"}</span>
-                </button>
-                <div
-                  className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${resultTemplateOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
-                >
-                  <div className="overflow-hidden">
-                    <div className="mt-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="text-sm font-semibold text-slate-900 dark:text-gray-100">テンプレ：{result.template.title}</div>
-                          <p className="mt-1 text-sm text-slate-500 dark:text-gray-400">コピーボタンで貼り付け用テキストをコピーできます。</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={copyTemplate}
-                          className="shrink-0 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-200 dark:hover:bg-blue-900/50"
-                        >
-                          {copyState === "copied" ? "コピーした" : copyState === "failed" ? "失敗" : "コピー"}
-                        </button>
-                      </div>
-                      <pre className="mt-3 whitespace-pre-wrap rounded-xl bg-slate-50 p-3 text-sm leading-6 text-gray-900 dark:bg-gray-700 dark:text-gray-100">
-                        {result.template.content}
-                      </pre>
-                    </div>
-                  </div>
-                </div>
               </div>
 
               {(weeklyReportLoading || weeklyReport) && (
