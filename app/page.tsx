@@ -92,16 +92,16 @@ function AxisBar({ label, score }: { label: string; score: number }) {
 }
 
 const CATEGORY_DISPLAY: { key: keyof EvaluateResponse["category_scores"]; label: string }[] = [
-  { key: "cleanliness", label: "清潔感（髪型・肌・爪・服装）" },
+  { key: "cleanliness", label: "清潔感（見た目・髪型・肌・爪・服装）" },
   { key: "fashion", label: "ファッション（服装・コーデ）" },
   { key: "fitness", label: "体づくり（筋トレ・運動）" },
   { key: "meetingActions", label: "出会い行動（機会を増やす）" },
-  { key: "dateActions", label: "デート行動（誘う・計画）" },
-  { key: "lifestyle", label: "生活習慣（睡眠・食事・整理）" },
-  { key: "speakingSkill", label: "話す力（会話をリードする）" },
-  { key: "listeningSkill", label: "聞く力（共感・質問する）" },
-  { key: "positiveThinking", label: "ポジティブ思考（前向きさ）" },
-  { key: "consistency", label: "継続力（習慣化・諦めない）" },
+  { key: "dateActions", label: "距離を縮める力（誘う・連絡・好意を伝える）" },
+  { key: "lifestyle", label: "生活習慣（睡眠・食事・整理・喫煙・飲酒）" },
+  { key: "speakingSkill", label: "話す力（会話をリード・盛り上げる）" },
+  { key: "listeningSkill", label: "聞く力（共感・質問・褒める）" },
+  { key: "positiveThinking", label: "ポジティブ思考（前向き・自信）" },
+  { key: "consistency", label: "継続力（習慣化・やり抜く）" },
 ];
 
 /** スコア別称号（minScore 昇順・5点刻み） */
