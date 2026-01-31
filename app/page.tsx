@@ -914,9 +914,9 @@ export default function Home() {
               <>
                 <hr className="my-5 border-slate-200" />
                 <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">🎁 前回のチャレンジ達成ボーナス</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">🎁 前回のチャレンジ、できた？</h3>
                   <p className="text-sm text-slate-600 dark:text-gray-300">
-                    前回出したチャレンジのうち、できたものにチェックを入れてください。達成分だけ今回のスコアにボーナス加点されます。
+                    前回のチャレンジでできたものにチェック！ボーナスGET
                   </p>
                   <div className="space-y-2">
                     {lastResult.challenges.map((c, i) => {
