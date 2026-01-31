@@ -102,30 +102,42 @@ const CATEGORY_DISPLAY: { key: keyof EvaluateResponse["category_scores"]; label:
   { key: "consistency", label: "継続力（習慣化・諦めない）" },
 ];
 
-/** スコア別称号（minScore, 称号） */
+/** スコア別称号（minScore 昇順・5点刻み） */
 const SCORE_TITLES: { minScore: number; title: string }[] = [
-  { minScore: 100, title: "🏆 伝説のモテ男" },
-  { minScore: 90, title: "👑 ほぼ完璧なイケメン" },
-  { minScore: 80, title: "💎 モテ男の領域" },
-  { minScore: 70, title: "✨ イケてる男" },
-  { minScore: 60, title: "⭐ 彼女できてもおかしくない" },
-  { minScore: 50, title: "🔥 モテへの階段を登り中" },
-  { minScore: 40, title: "💪 覚醒しかけのモテ男" },
-  { minScore: 30, title: "🔰 修行中の男磨き戦士" },
-  { minScore: 20, title: "🌱 芽が出始めた男" },
-  { minScore: 10, title: "🐣 ひよっこ男子" },
   { minScore: 0, title: "🐣 ひよっこ男子" },
+  { minScore: 10, title: "🐣 ひよっこ男子" },
+  { minScore: 15, title: "🐥 少し慣れてきた男子" },
+  { minScore: 20, title: "🌱 芽が出始めた男" },
+  { minScore: 25, title: "🌿 成長中の男" },
+  { minScore: 30, title: "🔰 修行中の男磨き戦士" },
+  { minScore: 35, title: "⚔️ 一人前の戦士" },
+  { minScore: 40, title: "💪 覚醒しかけのモテ男" },
+  { minScore: 45, title: "🏋️ 鍛錬を積んだ武士" },
+  { minScore: 50, title: "🔥 モテへの階段を登る者" },
+  { minScore: 55, title: "🚀 彼女圏内に迫る挑戦者" },
+  { minScore: 60, title: "⭐ 彼女ができる男" },
+  { minScore: 65, title: "🌟 魅力あふれる男" },
+  { minScore: 70, title: "✨ イケてる男" },
+  { minScore: 75, title: "💫 輝きを放つ男" },
+  { minScore: 80, title: "💎 モテ男の領域に立つ者" },
+  { minScore: 85, title: "💠 選ばれしモテ男" },
+  { minScore: 90, title: "👑 ほぼ完璧なイケメン" },
+  { minScore: 95, title: "🎖️ 伝説に近き者" },
+  { minScore: 100, title: "🏆 伝説のモテ男" },
 ];
 
-function getScoreTitle(score: number): { title: string; nextTitle: string | null; pointsToNext: number | null } {
+function getScoreTitle(score: number): { title: string; nextTitle: string | null; pointsToNext: number | null; isMax: boolean } {
   const s = Math.min(100, Math.max(0, Math.round(score)));
-  const current = SCORE_TITLES.find((t) => s >= t.minScore) ?? SCORE_TITLES[SCORE_TITLES.length - 1];
+  const current = [...SCORE_TITLES].filter((t) => t.minScore <= s).pop() ?? SCORE_TITLES[0];
   const nextTier = SCORE_TITLES.find((t) => t.minScore > s);
-  if (!nextTier) return { title: current.title, nextTitle: null, pointsToNext: null };
+  if (!nextTier) {
+    return { title: current.title, nextTitle: null, pointsToNext: null, isMax: true };
+  }
   return {
     title: current.title,
     nextTitle: nextTier.title,
     pointsToNext: nextTier.minScore - s,
+    isMax: false,
   };
 }
 
@@ -989,15 +1001,17 @@ export default function Home() {
                     <p className="text-sm font-medium text-blue-600">{result.visit_count}回目の判定です！</p>
                   )}
                   {(() => {
-                    const { title, nextTitle, pointsToNext } = getScoreTitle(result.overall_score ?? 0);
+                    const { title, nextTitle, pointsToNext, isMax } = getScoreTitle(result.overall_score ?? 0);
                     return (
                       <>
                         <p className="text-sm font-medium text-slate-900 dark:text-gray-100">{title}</p>
-                        {nextTitle != null && pointsToNext != null && pointsToNext > 0 && (
+                        {isMax ? (
+                          <p className="text-sm font-medium text-amber-600 dark:text-amber-400">最高ランク達成！</p>
+                        ) : nextTitle != null && pointsToNext != null && pointsToNext > 0 ? (
                           <p className="text-sm text-slate-600 dark:text-gray-300">
                             次の称号「{nextTitle}」まであと{pointsToNext}点！
                           </p>
-                        )}
+                        ) : null}
                       </>
                     );
                   })()}
