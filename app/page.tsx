@@ -621,7 +621,7 @@ export default function Home() {
               <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-100 text-lg font-bold text-blue-600 dark:bg-blue-900/40 dark:text-blue-300">
                 Step1
               </span>
-              <h4 className="mt-4 text-base font-semibold text-gray-900 dark:text-gray-100">今週の行動を入力</h4>
+              <h4 className="mt-4 text-base font-semibold text-gray-900 dark:text-gray-100">男を磨くためにやったことを入力</h4>
               <p className="mt-2 text-sm text-slate-600 dark:text-gray-400">1分で完了</p>
             </div>
             <div className="flex flex-col items-center text-center">
@@ -858,12 +858,26 @@ export default function Home() {
           ) : null}
 
           <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-gray-600 dark:bg-gray-800 sm:p-5">
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 sm:text-base">男磨きの行動記録</h2>
-            <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">悩み解決や目標達成のために今日頑張ったことは？（改行で複数入力できるよ）</p>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 sm:text-base">今日やった自分磨き</h2>
+            {goal ? (
+              <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-gray-600 dark:bg-gray-700">
+                <p className="text-sm text-slate-800 dark:text-gray-200">🎯 目標：{goal}</p>
+                {problems.length > 0 && (
+                  <p className="mt-1 text-sm text-slate-800 dark:text-gray-200">
+                    😔 悩み：{problems.slice(0, 2).join("、")}{problems.length >= 3 ? "など" : ""}
+                  </p>
+                )}
+              </div>
+            ) : null}
+            <p className="mt-3 text-sm text-slate-600 dark:text-gray-300">
+              {goal
+                ? "この目標達成や悩みの解決のために今日やったことは？（改行で複数入力できるよ）"
+                : "モテるために今日やったことを書いてね（改行で複数入力できるよ）"}
+            </p>
             <textarea
               value={actionsText}
               onChange={(e) => setActionsText(e.target.value)}
-              placeholder={"例：マッチングアプリでメッセージを送った、筋トレした、新しい服を買った"}
+              placeholder={"例：髪を切った、筋トレした、女の子に話しかけた"}
               rows={7}
               className="mt-3 min-h-[44px] w-full min-w-0 resize-none rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm leading-6 text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder:text-gray-500"
             />
