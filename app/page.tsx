@@ -900,7 +900,7 @@ export default function Home() {
                       const diff = c.difficulty ?? (i === 0 ? "easy" : i === 1 ? "medium" : "challenge");
                       const icon = diff === "easy" ? "🟢" : diff === "medium" ? "🟡" : "🔴";
                       const label = diff === "easy" ? "【簡単】" : diff === "medium" ? "【中級】" : "【挑戦】";
-                      const bonus = diff === "easy" ? "+1点" : diff === "medium" ? "+2点" : "+3点";
+                      const bonus = diff === "easy" ? "小ボーナス" : diff === "medium" ? "中ボーナス" : "大ボーナス";
                       return (
                         <label key={i} className="flex min-h-[48px] items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 dark:border-gray-600 dark:bg-gray-700">
                           <input
