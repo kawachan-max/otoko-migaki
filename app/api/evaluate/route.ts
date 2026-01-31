@@ -53,6 +53,8 @@ type EvaluateResponse = {
   changes_from_last: { improved: string[]; needs_work: string[] } | null;
   /** 今回のチャレンジボーナス（継続力への加点、成長曲線適用後） */
   challengeBonus: number;
+  /** 前回の診断から何日経過したか（復帰表示用） */
+  days_since_last_evaluation: number;
 };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -85,12 +87,18 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-/** 放置減点: 経過日数に応じて -0.3点/7日。最低1点。 */
+/**
+ * 放置減点: 30日以内は減点なし、30日超から1ヶ月あたり10%、最大50%。
+ * 減点月数 = (経過日数 - 30) / 30、減点率 = min(50%, 減点月数×10%)、
+ * 新スコア = 前回スコア × (1 - 減点率)、最低1点。
+ */
 function applyPenalty(prevScore: number, daysSince: number): number {
   if (!Number.isFinite(prevScore) || prevScore < 1) return 1;
-  if (daysSince <= 0) return round2(prevScore);
-  const penalty = (daysSince / 7) * 0.3;
-  return round2(Math.max(1, prevScore - penalty));
+  if (daysSince <= 30) return round2(prevScore);
+  const penaltyMonths = (daysSince - 30) / 30;
+  const penaltyRate = Math.min(0.5, penaltyMonths * 0.1);
+  const newScore = prevScore * (1 - penaltyRate);
+  return round2(Math.max(1, newScore));
 }
 
 /** 成長曲線: 現在スコアに応じた加点倍率（1点=1.0, 10点=0） */
@@ -289,6 +297,7 @@ function normalizeResponse(
     growth_comment: opts.is_first_time ? null : getString(root.growth_comment) ?? null,
     changes_from_last: opts.is_first_time ? null : normalizeChangesFromLast(root.changes_from_last),
     challengeBonus: 0, // 下でボーナス計算後に上書き
+    days_since_last_evaluation: 0, // POST で上書き
   };
 
   return res;
@@ -712,6 +721,7 @@ export async function POST(req: Request) {
     }
 
     normalized.evaluation_id = row.id;
+    normalized.days_since_last_evaluation = daysSinceLastEvaluation;
     return NextResponse.json({
       ...normalized,
     });

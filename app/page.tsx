@@ -50,6 +50,8 @@ type EvaluateResponse = {
   changes_from_last?: { improved: string[]; needs_work: string[] } | null;
   /** 今回のチャレンジボーナス（継続力への加点、成長曲線適用後） */
   challengeBonus?: number;
+  /** 前回の診断から何日経過したか（復帰表示用） */
+  days_since_last_evaluation?: number;
 };
 
 const meetMethodOptions: MeetMethod[] = ["アプリ", "紹介", "職場学校", "趣味", "イベント"];
@@ -1031,6 +1033,17 @@ export default function Home() {
               <p className="mt-3 text-sm text-slate-600 dark:text-gray-400">
                 💡 全員10点スタート！継続するほど点数がアップします
               </p>
+
+              {(result.days_since_last_evaluation ?? 0) >= 30 && (
+                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-900/30">
+                  <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                    🎉 {result.days_since_last_evaluation}日ぶり！また会えてうれしいよ😊
+                  </p>
+                  <p className="mt-1 text-sm text-amber-800 dark:text-amber-200">
+                    ちょっとサボってたからスコア下がっちゃったけど、また一緒に頑張ろう💪
+                  </p>
+                </div>
+              )}
 
               <div className="mt-4">
                 <button
