@@ -102,6 +102,33 @@ const CATEGORY_DISPLAY: { key: keyof EvaluateResponse["category_scores"]; label:
   { key: "consistency", label: "継続力（習慣化・諦めない）" },
 ];
 
+/** スコア別称号（minScore, 称号） */
+const SCORE_TITLES: { minScore: number; title: string }[] = [
+  { minScore: 100, title: "🏆 伝説のモテ男" },
+  { minScore: 90, title: "👑 ほぼ完璧なイケメン" },
+  { minScore: 80, title: "💎 モテ男の領域" },
+  { minScore: 70, title: "✨ イケてる男" },
+  { minScore: 60, title: "⭐ 彼女できてもおかしくない" },
+  { minScore: 50, title: "🔥 モテへの階段を登り中" },
+  { minScore: 40, title: "💪 覚醒しかけのモテ男" },
+  { minScore: 30, title: "🔰 修行中の男磨き戦士" },
+  { minScore: 20, title: "🌱 芽が出始めた男" },
+  { minScore: 10, title: "🐣 ひよっこ男子" },
+  { minScore: 0, title: "🐣 ひよっこ男子" },
+];
+
+function getScoreTitle(score: number): { title: string; nextTitle: string | null; pointsToNext: number | null } {
+  const s = Math.min(100, Math.max(0, Math.round(score)));
+  const current = SCORE_TITLES.find((t) => s >= t.minScore) ?? SCORE_TITLES[SCORE_TITLES.length - 1];
+  const nextTier = SCORE_TITLES.find((t) => t.minScore > s);
+  if (!nextTier) return { title: current.title, nextTitle: null, pointsToNext: null };
+  return {
+    title: current.title,
+    nextTitle: nextTier.title,
+    pointsToNext: nextTier.minScore - s,
+  };
+}
+
 type HistoryItem = { attempt: number; score: number; date: string };
 
 function getXAxisTicksForAll(total: number): number[] {
@@ -267,7 +294,6 @@ export default function Home() {
   const [isFormExpanded, setIsFormExpanded] = useState(false);
 
   /** 結果画面の折りたたみ（毎回閉じた状態で表示） */
-  const [resultTemplateOpen, setResultTemplateOpen] = useState(false);
   const [resultGrowthOpen, setResultGrowthOpen] = useState(false);
   const [resultHomeScreenOpen, setResultHomeScreenOpen] = useState(false);
   const [resultFeedbackOpen, setResultFeedbackOpen] = useState(false);
@@ -962,10 +988,22 @@ export default function Home() {
                   {(result.visit_count ?? 0) >= 2 && (
                     <p className="text-sm font-medium text-blue-600">{result.visit_count}回目の判定です！</p>
                   )}
-                  <p className="text-sm text-slate-600 dark:text-gray-300">ペルソナタイプ: <span className="font-medium text-slate-900 dark:text-gray-100">{result.persona_type}</span></p>
+                  {(() => {
+                    const { title, nextTitle, pointsToNext } = getScoreTitle(result.overall_score ?? 0);
+                    return (
+                      <>
+                        <p className="text-sm font-medium text-slate-900 dark:text-gray-100">{title}</p>
+                        {nextTitle != null && pointsToNext != null && pointsToNext > 0 && (
+                          <p className="text-sm text-slate-600 dark:text-gray-300">
+                            次の称号「{nextTitle}」まであと{pointsToNext}点！
+                          </p>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
                 <div className="shrink-0 text-left sm:text-right">
-                  <div className="text-sm text-slate-500 dark:text-gray-400">合計点</div>
+                  <div className="text-sm text-slate-500 dark:text-gray-400">成長スコア</div>
                   <div className="mt-1 text-xl font-bold tabular-nums text-slate-900 dark:text-gray-100 sm:text-2xl">
                     {clampOverallScore(result.overall_score)}<span className="text-base font-semibold text-slate-500 dark:text-gray-400 sm:text-lg">/100点</span>
                   </div>
@@ -976,6 +1014,9 @@ export default function Home() {
                   )}
                 </div>
               </div>
+              <p className="mt-3 text-sm text-slate-600 dark:text-gray-400">
+                💡 全員10点スタート！継続するほど点数がアップします
+              </p>
 
               <div className="mt-4">
                 <button
