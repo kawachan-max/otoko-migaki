@@ -76,21 +76,6 @@ function clampOverallScore(n: number) {
   return Math.min(100, Math.max(0, Math.round(n)));
 }
 
-function AxisBar({ label, score }: { label: string; score: number }) {
-  const s = clampCategoryScore(score);
-  return (
-    <div className="min-w-0 space-y-1">
-      <div className="flex items-center justify-between gap-2 text-sm text-slate-600 dark:text-gray-300">
-        <span className="min-w-0 truncate">{label}</span>
-        <span className="shrink-0 tabular-nums">{s}/10</span>
-      </div>
-      <div className="h-2.5 w-full min-w-0 rounded-full bg-slate-100 dark:bg-gray-700">
-        <div className="h-2.5 rounded-full bg-blue-500" style={{ width: `${(s / 10) * 100}%` }} />
-      </div>
-    </div>
-  );
-}
-
 /** カテゴリ行（通常時は短いラベル、タップで説明展開） */
 function CategoryScoreRow({
   index,
