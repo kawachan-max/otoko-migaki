@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createServerClient } from "@/lib/supabase";
 import { getGoodExamples } from "@/lib/learning";
-import { getUserHistory, getLatestFeedback } from "@/lib/history";
+import { getUserHistory, getLatestFeedback, getEvaluationCount } from "@/lib/history";
 
 type ChallengeDifficulty = "easy" | "medium" | "challenge";
 
@@ -321,8 +321,9 @@ export async function POST(req: Request) {
     }
 
     const history = await getUserHistory(body.anonymous_user_id);
-    const visitCount = history.length + 1;
-    const isFirstTime = history.length === 0;
+    const existingCount = await getEvaluationCount(body.anonymous_user_id);
+    const visitCount = existingCount + 1; // 今回保存する分を含めた回数
+    const isFirstTime = existingCount === 0;
     const latest = history[0];
     const latestFeedbackComments = await getLatestFeedback(body.anonymous_user_id);
 

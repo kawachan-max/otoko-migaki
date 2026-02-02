@@ -45,6 +45,27 @@ export async function getUserHistory(anonymousUserId: string): Promise<Evaluatio
   return data as EvaluationHistoryRow[];
 }
 
+/**
+ * 同じ anonymous_user_id の診断件数（evaluations の行数）を取得。
+ * 診断回数表示用。getUserHistory は limit(5) のため件数が 5 で頭打ちになるため、別途カウントする。
+ */
+export async function getEvaluationCount(anonymousUserId: string): Promise<number> {
+  if (!anonymousUserId.trim()) return 0;
+
+  const supabase = createServerClient();
+  const { count, error } = await supabase
+    .from("evaluations")
+    .select("id", { count: "exact", head: true })
+    .eq("anonymous_user_id", anonymousUserId.trim());
+
+  if (error) {
+    console.error("[history] getEvaluationCount error:", error);
+    return 0;
+  }
+
+  return typeof count === "number" ? count : 0;
+}
+
 export type LatestAnswers = Record<string, unknown> | null;
 
 /**
